@@ -461,7 +461,8 @@ class XCaliburD(Syringe):
         Args:
             `volume_ul` (int) : volume in microliters
         Kwargs:
-            `microstep` (bool) : whether to convert to standard steps or microsteps
+            `microstep` (bool) : whether to convert to standard steps or
+                                 microsteps
 
         """
         if not microstep: microstep = self.state['microstep']
@@ -470,6 +471,16 @@ class XCaliburD(Syringe):
         else:
             steps = volume_ul * (3000/self.syringe_ul)
         return steps
+
+    def _simIncToPulses(self, speed_inc):
+        """
+        :::To-do:::
+        Updates simulation speeds given a speed increment setting (`speed_inc`)
+        following XCalibur handling of speed changes (i.e. cutoff speed cannot
+        be higher than top speed, so it is automatically adjusted on the pump)
+    
+        """
+        pass
 
     def __del__(self):
         """

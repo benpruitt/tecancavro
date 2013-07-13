@@ -94,8 +94,8 @@ class SerialAPILink(APILink):
             reg[port] = {}
             reg[port]['info'] = {k: v for k, v in self.ser_info.iteritems()}
             reg[port]['_ser'] = serial.Serial(port=port,
-                                              baudrate=reg[port]['info']['baud'],
-                                              timeout=reg[port]['info']['timeout'])
+                                    baudrate=reg[port]['info']['baud'],
+                                    timeout=reg[port]['info']['timeout'])
             reg[port]['_devices'] = [self.id_]
         else:
             if len(set(self.ser_info.items()) &
