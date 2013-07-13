@@ -1,6 +1,6 @@
 #tecancavro
 
-Python package to control Tecan Cavro Syringe pumps.
+Python package to control Tecan Cavro syringe pumps.
 
 Modules are provided for:
 
