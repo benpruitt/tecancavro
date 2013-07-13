@@ -54,7 +54,7 @@ class Syringe(object):
     def __init__(self, com_link):
         self.com_link = com_link
 
-    def _sendRcv(self, cmd_string):
+    def sendRcv(self, cmd_string):
         response = self.com_link.sendRcv(cmd_string)
         ready = self._checkStatus(response['status_byte'])
         data = response['data']

@@ -24,6 +24,28 @@ class XCaliburD(Syringe):
 
     def __init__(self, com_link, num_ports=9, syringe_ul=1000,
                  microstep=False, waste_port=None, slope=7):
+        """
+        Object initialization function.
+
+        Args:
+            `com_link` (Object) : instantiated TecanAPI subclass / transport
+                                  layer (see transport.py)
+                *Must have a `.sendRcv(cmd)` instance method to send a command
+                    string and parse the reponse (see transport.py)
+        Kwargs:
+            `num_ports` (int) : number of ports on the distribution valve
+                [default] - 9
+            `syringe_ul` (int) : syringe volume in microliters
+                [default] - 1000
+            `microstep` (bool) : whether or not to operate in microstep mode
+                [default] - False (factory default)
+            `waste_port` (int) : waste port for `extractToWaste`-like
+                                 convenience functions
+                [default] - None
+            `slope` (int) : slope setting
+                [default] - 7 (factory default)
+
+        """
         super(XCaliburD, self).__init__(com_link)
         self.num_ports = 9
         self.syringe_ul = 1000
@@ -71,9 +93,70 @@ class XCaliburD(Syringe):
             self.movePlungerRel(steps)
             return self.executeChain()
 
-    # Chainable convenience functions
+    # Chain functions
+
+    def executeChain(self):
+        """
+        Executes and resets the current command chain (`self.cmd_chain`).
+        Returns the estimated execution time (`self.exec_time`) for the chain.
+
+        """
+        self._sendRcv(self.cmd_chain, execute=True)
+        exec_time = self.exec_time
+        self.resetChain(on_execute=True)
+        return exec_time
+
+    def resetChain(self, on_execute=False):
+        """
+        Resets the command chain (`self.cmd_chain`) and execution time
+        (`self.exec_time`). Optionally updates `slope` and `microstep`
+        state variables, speeds, and simulation state.
+
+        Kwargs:
+            `on_execute` (bool) : should be used to indicate whether or not
+                                  the chain being reset was executed, which
+                                  will cue slope and microstep state
+                                  updating (as well as speed updating).
+        """
+        self.cmd_chain = ''
+        self.exec_time = 0
+        if (on_execute and self.sim_speed_change):
+            self.state['slope'] = self.sim_state['slope']
+            self.state['microstep'] = self.sim_state['microstep']
+            self.updateSpeeds()
+        self.updateSimState()
+
+    def updateSimState(self):
+        """
+        Copies the current state dictionary (`self.state`) to the
+        simulation state dictionary (`self.sim_state`)
+
+        """
+        self.sim_state = {k: v for k,v in self.state.iteritems()}
+
+    def cacheSimSpeeds(self):
+        """
+        Caches the simulation state speed settings when called. May
+        be used for convenience functions in which speed settings
+        need to be temporarily changed and then reverted
+
+        """
+        self._cached_start_speed = self.sim_state['start_speed']
+        self._cached_top_speed = self.sim_state['top_speed']
+        self._cached_cutoff_speed = self.sim_state['cutoff_speed']
+
+    def restoreSimSpeeds(self):
+        """ Restores simulation speeds cached by `self.cacheSimSpeeds` """
+        self.setTopSpeed(self._cached_top_speed)
+        self.setCutoffSpeed(self._cached_cutoff_speed)
+        self.setStartSpeed(self._cached_start_speed)
 
     def execWrap(func):
+        """
+        Decorator to wrap chainable commands, allowing for immediate execution
+        of the wrapped command by passing in an `execute=True` kwarg.
+
+        """
         @wraps(func)
         def addAndExec(self, *args, **kwargs):
             execute = False
@@ -84,14 +167,18 @@ class XCaliburD(Syringe):
                 return self.executeChain()
         return addAndExec
 
+    # Chainable convenience functions
+
     @execWrap
     def extract(self, from_port, volume_ul):
+        """ Extract `volume_ul` from `from_port` """
         steps = self._ulToSteps(volume_ul)
         self.changePort(from_port)
         self.movePlungerRel(steps)
 
     @execWrap
     def dispense(self, to_port, volume_ul):
+        """ Dispense `volume_ul` from `to_port` """
         steps = self._ulToSteps(volume_ul)
         self.changePort(to_port)
         self.movePlungerRel(-steps)
@@ -100,6 +187,20 @@ class XCaliburD(Syringe):
 
     @execWrap
     def changePort(self, to_port, from_port=None, direction='CW'):
+        """
+        Change port to `to_port`. If `from_port` is provided, the `direction`
+        will be calculated to minimize travel time. `direction` may also be 
+        provided directly.
+
+        Args:
+            `to_port` (int) : port to which to change
+        Kwargs:
+            `from_port` (int) : originating port
+            `direction` (str) : direction of valve movement
+                'CW' - clockwise
+                'CCW' - counterclockwise
+
+        """
         if not 0 < to_port <= self.num_ports:
             raise(ValueError('`in_port` [{0}] must be between 1 and '
                              '`num_ports` [{1}]'.format(to_port,
@@ -195,37 +296,26 @@ class XCaliburD(Syringe):
         self.sim_speed_change = True
         self.cmd_chain += cmd_string
 
-    # Chain functions
+    # Chainable control commands
 
-    def executeChain(self):
-        print self.cmd_chain
-        self._sendRcv(self.cmd_chain, execute=True)
-        exec_time = self.exec_time
-        self.resetChain(on_execute=True)
-        return exec_time
+    @execWrap
+    def repeatCmdSeq(self, num_repeats):
+        if not 0 < num_repeats < 30000:
+            raise(ValueError('`num_repeats` [{0}] must be between 0 and 30000'
+                             ''.format(num_repeats)))
+        cmd_string = 'G{0}'.num_repeats
+        self.cmd_chain += cmd_string
+        self.delay *= num_repeats
 
-    def resetChain(self, on_execute=False):
-        self.cmd_chain = ''
-        self.exec_time = 0
-        if (on_execute and self.sim_speed_change):
-            self.state['slope'] = self.sim_state['slope']
-            self.state['microstep'] = self.sim_state['microstep']
-            self.updateSpeeds()
-            self.updateSimState()
+    @execWrap
+    def delayExec(self, delay_ms):
+        """ Delays command execution for `delay` milliseconds """
+        if not 0 < delay < 30000:
+            raise(ValueError('`delay` [{0}] must be between 0 and 40000 ms'
+                             ''.format(delay)))
+        cmd_string = 'M{0}'.format(delay)
+        self.cmd_chain += cmd_string
 
-    def updateSimState(self):
-        self.sim_state = {k: v for k,v in self.state.iteritems()}
-
-    def cacheSimSpeeds(self):
-        self._cached_start_speed = self.sim_state['start_speed']
-        self._cached_top_speed = self.sim_state['top_speed']
-        self._cached_cutoff_speed = self.sim_state['cutoff_speed']
-
-    def restoreSimSpeeds(self):
-        self.setTopSpeed(self._cached_top_speed)
-        self.setCutoffSpeed(self._cached_cutoff_speed)
-        self.setStartSpeed(self._cached_start_speed)
-        
     # Report commands
 
     def updateSpeeds(self):
@@ -278,8 +368,20 @@ class XCaliburD(Syringe):
         parsed_response = self._sendRcv(cmd_string)
         return int(parsed_response[0])
 
-    # Communication handlers and special functions
+    # Control commands
 
+    def terminateCmd(self):
+        cmd_string = 'T'
+        return self._sendRcv(cmd_string, execute=True)
+
+    def haltExec(self, input_sig=0):
+        if not 0 < input_sig < 2:
+            raise(ValueError('`input_sig` [{0}] must be between 0 and 2'
+                             ''.format(input_sig)))
+        cmd_string = 'H{0}'.format(input_sig)
+        return self._sendRcv(cmd_string)
+
+    # Communication handlers and special functions
 
     def waitReady(self, timeout=10, polling_interval=0.3):
         self._waitReady(timeout=10, polling_interval=0.3)
@@ -302,7 +404,7 @@ class XCaliburD(Syringe):
         if execute:
             cmd_string += 'R'
         self.last_cmd = cmd_string
-        parsed_response = super(XCaliburD, self)._sendRcv(cmd_string)
+        parsed_response = super(XCaliburD, self).sendRcv(cmd_string)
         return parsed_response
 
     def _calcPlungerMoveTime(self, move_steps):
