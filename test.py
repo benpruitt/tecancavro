@@ -1,6 +1,6 @@
 from tecancavro.models import XCaliburD
 
-from tecancavro.tecanapi import SerialAPILink
+from tecancavro.transport import SerialAPILink
 
 
 def returnCavro():
