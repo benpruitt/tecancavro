@@ -10,5 +10,6 @@ Modules are provided for:
 - Specific Cavro model control (with high level funcitons) [models.py](https://github.com/benpruitt/tecancavro/blob/master/tecancavro/models.py)<br>
   - XCALIBUR with distribution valve (`class: XCaliburD`)
 
-###Work in progress :: not stable
+##### **API, serial wrapper, and generic syringe control are all working ([tecanapi.py](https://github.com/benpruitt/tecancavro/blob/master/tecancavro/tecanapi.py), [transport.py](https://github.com/benpruitt/tecancavro/blob/master/tecancavro/tecanapi.py), [syringe.py](https://github.com/benpruitt/tecancavro/blob/master/tecancavro/syringe.py)) 
+##### **Model-specific code is still a work-in-progress
 
