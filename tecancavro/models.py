@@ -30,8 +30,8 @@ class XCaliburD(Syringe):
                    30: 70, 31: 60, 32: 50, 33: 40, 34: 30, 35: 20, 36: 18,
                    37: 16, 38: 14, 39: 12, 40: 10}
 
-    def __init__(self, com_link, num_ports=9, syringe_ul=1000,
-                 microstep=False, waste_port=None, slope=14):
+    def __init__(self, com_link, num_ports=9, syringe_ul=1000, direction='CW',
+                 microstep=False, waste_port=None, slope=14, init_force=0):
         """
         Object initialization function.
 
@@ -52,19 +52,28 @@ class XCaliburD(Syringe):
                 [default] - None
             `slope` (int) : slope setting
                 [default] - 14 (factory default)
+            `init_force` (int) : initialization force or speed
+                0 [default] - full plunger force and default speed
+                1 - half plunger force and default speed
+                2 - one third plunger force and default speed
+                10-40 - full force and speed code X 
 
         """
         super(XCaliburD, self).__init__(com_link)
-        self.num_ports = 9
-        self.syringe_ul = 1000
+        self.num_ports = num_ports
+        self.syringe_ul = syringe_ul
+        self.direction = direction
         self.waste_port = waste_port
+        self.init_force = init_force
         self.state = {
             'microstep': microstep,
             'start_speed': None,
             'top_speed': None,
             'cutoff_speed': None,
-            'slope': 7
+            'slope': slope
         }
+        if microstep: self.setMicrostep(on=True)
+        
         # Command chaining state information
         self.cmd_chain = ''
         self.exec_time = 0
@@ -74,6 +83,17 @@ class XCaliburD(Syringe):
         # Init functions
         self.updateSpeeds()
         self.updateSimState()
+
+
+    def init(self, init_force=None, direction=None):
+        """
+        Initialize pump. Uses instance `self.init_force` and `self.direction`
+        if not provided
+        """
+        if not init_force: init_force = self.init_force
+        if not direction: direction = self.direction
+        cmd_string = '{0}{1}'.format(XCaliburD.DIR_DICT[direction],
+                                     init_force)
 
     # Convenience functions
 
@@ -328,6 +348,11 @@ class XCaliburD(Syringe):
         self.delay *= num_repeats
 
     @execWrap
+    def markRepeatStart(self):
+        cmd_string = 'g'
+        self.cmd_chain += cmd_string
+
+    @execWrap
     def delayExec(self, delay_ms):
         """ Delays command execution for `delay` milliseconds """
         if not 0 < delay < 30000:
@@ -335,6 +360,26 @@ class XCaliburD(Syringe):
                              ''.format(delay)))
         cmd_string = 'M{0}'.format(delay)
         self.cmd_chain += cmd_string
+
+    @execwrap
+    def haltExec(self, input_pin=0):
+        """
+        Used within a command string to halt execution until another [R]
+        command is sent, or until TTL pin `input_pin` goes low
+
+        Kwargs:
+            `input_pin` (int) : input pin code corresponding to the desired
+                                TTL input signal pin on the XCalibur
+                0 - either 1 or 2
+                1 - input 1 (J4 pin 7)
+                2 - input 2 (J4 pin 8)
+
+        """
+        if not 0 <= input_pin < 2:
+            raise(ValueError('`input_pin` [{0}] must be between 0 and 2'
+                             ''.format(input_sig)))
+        cmd_string = 'H{0}'.format(input_sig)
+        return self._sendRcv(cmd_string)
 
     # Report commands
 
@@ -388,18 +433,20 @@ class XCaliburD(Syringe):
         parsed_response = self._sendRcv(cmd_string)
         return int(parsed_response[0])
 
+    # Config commands
+
+    def setMicrostep(on=False):
+        """ Turns microstep mode on or off """
+        cmd_string = 'N{0}'.format(int(on))
+        parsed_response = self._sendRcv(cmd_string, execute=True)
+        self.microstep = on
+        return parsed_response
+
     # Control commands
 
     def terminateCmd(self):
         cmd_string = 'T'
         return self._sendRcv(cmd_string, execute=True)
-
-    def haltExec(self, input_sig=0):
-        if not 0 < input_sig < 2:
-            raise(ValueError('`input_sig` [{0}] must be between 0 and 2'
-                             ''.format(input_sig)))
-        cmd_string = 'H{0}'.format(input_sig)
-        return self._sendRcv(cmd_string)
 
     # Communication handlers and special functions
 
