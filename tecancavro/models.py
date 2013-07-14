@@ -82,20 +82,26 @@ class XCaliburD(Syringe):
         self.sim_state = {k: v for k,v in self.state.iteritems()}
 
         # Init functions
+        if self.waste_port:
+            self.init(out_port=self.waste_port)
+        else:
+            self.init()
+        self.waitReady()
         self.updateSpeeds()
         self.getCurPort()
         self.updateSimState()
 
 
-    def init(self, init_force=None, direction=None):
+    def init(self, init_force=None, direction=None, in_port=0,
+             out_port=0):
         """
         Initialize pump. Uses instance `self.init_force` and `self.direction`
         if not provided
         """
         if not init_force: init_force = self.init_force
         if not direction: direction = self.direction
-        cmd_string = '{0}{1}'.format(self.__class__.DIR_DICT[direction][1],
-                                     init_force)
+        cmd_string = '{0}{1},{2},{3}'.format(self.__class__.DIR_DICT[direction][1],
+                                     init_force, in_port, out_port)
         return self._sendRcv(cmd_string, execute=True)
 
     # Convenience functions

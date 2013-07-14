@@ -84,7 +84,7 @@ class Syringe(object):
         Checks to see if the syringe is ready to accept a new command (i.e.
         is not busy). Returns `True` if it is ready, or `False` if it is not.
         """
-        ready = self._sendRcv('Q')[1]
+        ready = self.sendRcv('Q')[1]
         return ready
 
     def _waitReady(self, polling_interval=0.3, timeout=10):

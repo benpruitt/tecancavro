@@ -121,11 +121,10 @@ class TecanAPISerial(TecanAPI):
 class TecanAPINode(TecanAPI):
     """
     `TecanAPI` subclass for node-based serial bridge communication.
-    Tailored for the ARC GT sequencing platform. Maximum anticipated
-    response length is 9 (data=24000 -- microsteps)
+    Tailored for the ARC GT sequencing platform. 
     """
 
-    def __init__(self, tecan_addr, node_addr, response_len=9, 
+    def __init__(self, tecan_addr, node_addr, response_len=20, 
                  max_attempts=5):
         super(TecanAPINode, self).__init__(tecan_addr)
         self.node_addr = node_addr
@@ -144,9 +143,10 @@ class TecanAPINode(TecanAPI):
             url = ('http://{0}/syringe?LENGTH={1}&SYRINGE={2}'
                   ''.format(self.node_addr, self.response_len,
                             frame_out))
-            print url
-            frame_in = self._jsonFetch(url)
+            raw_in = self._jsonFetch(url)
+            frame_in = self._analyzeFrame(raw_in)
             if frame_in:
+                print frame_in
                 return frame_in
             sleep(0.2 * attempt_num)
             # except Exception, e:
@@ -166,7 +166,6 @@ class TecanAPINode(TecanAPI):
                       self._assembleCmd() + [self.STOP_BYTE]
         checksum = self._buildChecksum(frame_list)
         frame_list.append(checksum)
-        print frame_list
         return ''.join( [ "%02X" % x for x in frame_list ] )
 
     #Override _analyzeFrame for hex encoding
