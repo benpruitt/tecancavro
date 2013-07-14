@@ -19,15 +19,7 @@ import time
 
 from time import sleep
 
-from tecanapi import APILink
-
-
-class TecanAPITimeout(Exception):
-    """
-    Raised when a Tecan device does not respond to API commands (typically
-    after a maximum allowed number of retry attempts has been exceeded)
-    """
-    pass
+from tecanapi import APILink, TecanAPITimeout
 
 
 class SerialAPILink(APILink):

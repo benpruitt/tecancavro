@@ -9,6 +9,14 @@ layer encapsulation (e.g. serial encasulation).
 """
 
 
+class TecanAPITimeout(Exception):
+    """
+    Raised when a Tecan device does not respond to API commands (typically
+    after a maximum allowed number of retry attempts has been exceeded)
+    """
+    pass
+
+
 class APILink(object):
 
     def __init__(self, addr):
