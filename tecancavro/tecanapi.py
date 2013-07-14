@@ -1,8 +1,8 @@
 """
 tecanapi.py
 
-Contains the `APILink` class to facilitate device communication over
-the Tecan OEM API. The `APILink` class provides bare-bones API frame
+Contains the `TecanAPI` class to facilitate device communication over
+the Tecan OEM API. The `TecanAPI` class provides bare-bones API frame
 construction and parsing, and may be subclassed to provide transport-
 layer encapsulation (e.g. serial encasulation).
 
@@ -17,7 +17,7 @@ class TecanAPITimeout(Exception):
     pass
 
 
-class APILink(object):
+class TecanAPI(object):
 
     def __init__(self, addr):
         self.START_BYTE = 0x02
@@ -102,7 +102,7 @@ class APILink(object):
             if isinstance(self._cmd, int):
                 return [self._cmd]
             else:
-                raise TypeError('APILink: command {0} is neither iterable '
+                raise TypeError('TecanAPI: command {0} is neither iterable '
                                 'nor an int'.format(self._cmd))
 
     def _buildChecksum(self, partial_frame):

@@ -22,8 +22,16 @@ class XCaliburD(Syringe):
 
     DIR_DICT = {'CW': ('I', 'Z'), 'CCW': ('O', 'Y')}
 
+    SPEED_CODES = {0: 6000, 1: 5600, 2: 5000, 3: 4400, 4: 3800, 5: 3200,
+                   6: 2600, 7: 2200, 8: 2000, 9: 1800, 10: 1600, 11: 1400,
+                   12: 1200, 13: 1000, 14: 800, 15: 600, 16: 400, 17: 200,
+                   18: 190, 19: 180, 20: 170, 21: 160, 22: 150, 23: 140,
+                   24: 130, 25: 120, 26: 110, 17: 100, 28: 90, 29: 80,
+                   30: 70, 31: 60, 32: 50, 33: 40, 34: 30, 35: 20, 36: 18,
+                   37: 16, 38: 14, 39: 12, 40: 10}
+
     def __init__(self, com_link, num_ports=9, syringe_ul=1000,
-                 microstep=False, waste_port=None, slope=7):
+                 microstep=False, waste_port=None, slope=14):
         """
         Object initialization function.
 
@@ -43,7 +51,7 @@ class XCaliburD(Syringe):
                                  convenience functions
                 [default] - None
             `slope` (int) : slope setting
-                [default] - 7 (factory default)
+                [default] - 14 (factory default)
 
         """
         super(XCaliburD, self).__init__(com_link)
@@ -263,26 +271,38 @@ class XCaliburD(Syringe):
 
     # Chainable set commands
     @execWrap
-    def setSpeed(self, increments):
-        cmd_string = 'S{0}'.format(increments)
+    def setSpeed(self, speed_code):
+        if not 0 <= slope_code <= 40:
+            raise(ValueError('`speed_code` [{0}] must be between 0 and 40'
+                             ''.format(speed_code)))
+        cmd_string = 'S{0}'.format(speed_code)
         self.sim_speed_change = True
-        #self._simIncToPulses()
+        self._simIncToPulses()
         self.cmd_chain += cmd_string
 
     @execWrap
     def setStartSpeed(self, pulses_per_sec):
+        if not 50 <= pulses_per_sec <= 1000:
+            raise(ValueError('Start speed `pulses_per_sec` [{0}] must be '
+                             'between 50 and 1000'.format(pulses_per_sec)))
         cmd_string = 'v{0}'.format(pulses_per_sec)
         self.sim_speed_change = True
         self.cmd_chain += cmd_string
 
     @execWrap
     def setTopSpeed(self, pulses_per_sec):
+        if not 5 <= pulses_per_sec <= 6000:
+            raise(ValueError('Cutoff speed `pulses_per_sec` [{0}] must be '
+                             'between 5 and 6000'.format(pulses_per_sec)))
         cmd_string = 'V{0}'.format(pulses_per_sec)
         self.sim_speed_change = True
         self.cmd_chain += cmd_string
 
     @execWrap
     def setCutoffSpeed(self, pulses_per_sec):
+        if not 50 <= pulses_per_sec <= 2700:
+            raise(ValueError('Cutoff speed `pulses_per_sec` [{0}] must be '
+                             'between 50 and 2700'.format(pulses_per_sec)))
         cmd_string = 'c{0}'.format(pulses_per_sec)
         self.sim_speed_change = True
         self.cmd_chain += cmd_string
@@ -290,7 +310,7 @@ class XCaliburD(Syringe):
     @execWrap
     def setSlope(self, slope_code, chain=False):
         if not 1 <= slope_code <= 20:
-            raise(ValueError('`slope_code` [{0}] must be between 0 and 20'
+            raise(ValueError('`slope_code` [{0}] must be between 1 and 20'
                              ''.format(slope_code)))
         cmd_string = 'L{0}'.format(slope_code)
         self.sim_speed_change = True
@@ -474,13 +494,17 @@ class XCaliburD(Syringe):
 
     def _simIncToPulses(self, speed_inc):
         """
-        :::To-do:::
         Updates simulation speeds given a speed increment setting (`speed_inc`)
         following XCalibur handling of speed changes (i.e. cutoff speed cannot
         be higher than top speed, so it is automatically adjusted on the pump)
-    
+
         """
-        pass
+        top_speed = XCaliburD.SPEED_CODES[speed_inc]
+        self.sim_state['top_speed'] = top_speed
+        if self.sim_state['start_speed'] > top_speed:
+            self.sim_state['start_speed'] = top_speed
+        if self.sim_state['cutoff_speed'] > top_speed:
+            self.sim_state['cutoff_speed'] = top_speed
 
     def __del__(self):
         """

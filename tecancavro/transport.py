@@ -1,12 +1,12 @@
 """
 transport.py
 
-Contains transport layer subclasses of the `APILink` class, which provides
+Contains transport layer subclasses of the `TecanAPI` class, which provides
 Tecan OEM API frame handling. All subclasses expose instance method `sendRcv`,
 which sends a command string (`cmd`) and returns a dictionary containing the
 `status_byte` and `data` in the response frame. Current subclasses include:
 
-`SerialAPILink` : Provides serial encapsulation of TecanAPI frame handling.
+`TecanAPISerial` : Provides serial encapsulation of TecanAPI frame handling.
                   Can facilitate communication with multiple Tecan devices
                   on the same RS-232 port (i.e., daisy-chaining) by sharing
                   a single serial port instance.
@@ -19,12 +19,12 @@ import time
 
 from time import sleep
 
-from tecanapi import APILink, TecanAPITimeout
+from tecanapi import TecanAPI, TecanAPITimeout
 
 
-class SerialAPILink(APILink):
+class TecanAPISerial(TecanAPI):
     """
-    Wraps the APILink class to provide serial communication encapsulation
+    Wraps the TecanAPI class to provide serial communication encapsulation
     and management for the Tecan OEM API. Maps devices to a state-monitored
     dictionary, `ser_mapping`, which allows multiple Tecan devices to
     share a serial port (provided that the serial params are the same).
@@ -32,10 +32,10 @@ class SerialAPILink(APILink):
 
     ser_mapping = {}
 
-    def __init__(self, addr, ser_port, ser_baud, ser_timeout=0.1,
+    def __init__(self, tecan_addr, ser_port, ser_baud, ser_timeout=0.1,
                  max_attempts=5):
 
-        super(SerialAPILink, self).__init__(addr)
+        super(TecanAPISerial, self).__init__(tecan_addr)
 
         self.id_ = str(uuid.uuid4())
         self.ser_port = ser_port
@@ -75,12 +75,12 @@ class SerialAPILink(APILink):
 
     def _registerSer(self):
         """
-        Checks to see if another SerialAPILink instance has registered the
+        Checks to see if another TecanAPISerial instance has registered the
         same serial port in `ser_mapping`. If there is a conflict, checks to
         see if the parameters match, and if they do, shares the connection.
         Otherwise it raises a `serial.SerialException`.
         """
-        reg = SerialAPILink.ser_mapping
+        reg = TecanAPISerial.ser_mapping
         port = self.ser_port
         if self.ser_port not in reg:
             reg[port] = {}
@@ -92,7 +92,7 @@ class SerialAPILink(APILink):
         else:
             if len(set(self.ser_info.items()) &
                set(reg[port]['info'].items())) != 3:
-                raise serial.SerialException('SerialAPILink conflict: ' \
+                raise serial.SerialException('TecanAPISerial conflict: ' \
                     'another device is already registered to {0} with ' \
                     'different parameters'.format(port))
             else:
@@ -103,10 +103,10 @@ class SerialAPILink(APILink):
         """
         Cleanup serial port registration on delete
         """
-        port_reg = SerialAPILink.ser_mapping[self.ser_port]
+        port_reg = TecanAPISerial.ser_mapping[self.ser_port]
         dev_list = port_reg['_devices']
         ind = dev_list.index(self.id_)
         del dev_list[ind]
         if len(dev_list) == 0:
             port_reg['_ser'].close()
-            del port_reg, SerialAPILink.ser_mapping[self.ser_port]
+            del port_reg, TecanAPISerial.ser_mapping[self.ser_port]
