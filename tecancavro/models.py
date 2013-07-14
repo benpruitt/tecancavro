@@ -66,13 +66,14 @@ class XCaliburD(Syringe):
         self.waste_port = waste_port
         self.init_force = init_force
         self.state = {
+            'port': None,
             'microstep': microstep,
             'start_speed': None,
             'top_speed': None,
             'cutoff_speed': None,
             'slope': slope
         }
-        self.setMicrostep(on=int(microstep))
+        self.setMicrostep(on=microstep)
 
         # Command chaining state information
         self.cmd_chain = ''
@@ -82,6 +83,7 @@ class XCaliburD(Syringe):
 
         # Init functions
         self.updateSpeeds()
+        self.getCurPort()
         self.updateSimState()
 
 
@@ -92,8 +94,9 @@ class XCaliburD(Syringe):
         """
         if not init_force: init_force = self.init_force
         if not direction: direction = self.direction
-        cmd_string = '{0}{1}'.format(self.__class__.DIR_DICT[direction],
+        cmd_string = '{0}{1}'.format(self.__class__.DIR_DICT[direction][1],
                                      init_force)
+        return self._sendRcv(cmd_string, execute=True)
 
     # Convenience functions
 
@@ -152,6 +155,7 @@ class XCaliburD(Syringe):
             self.state['slope'] = self.sim_state['slope']
             self.state['microstep'] = self.sim_state['microstep']
             self.updateSpeeds()
+            self.getCurPort()
         self.updateSimState()
 
     def updateSimState(self):
@@ -233,13 +237,14 @@ class XCaliburD(Syringe):
             raise(ValueError('`in_port` [{0}] must be between 1 and '
                              '`num_ports` [{1}]'.format(to_port,
                              self.num_ports)))
-        if from_port:
-            diff = to_port - from_port
-            if abs(diff) >= 7: diff = -diff
-            if diff < 0: direction = 'CCW'
-            else: direction = 'CW'
+        if not from_port: from_port = self.sim_state['port']
+        diff = to_port - from_port
+        if abs(diff) >= 7: diff = -diff
+        if diff < 0: direction = 'CCW'
+        else: direction = 'CW'
         cmd_string = '{0}{1}'.format(self.__class__.DIR_DICT[direction][0], 
                                      to_port)
+        self.sim_state['port'] = to_port
         self.cmd_chain += cmd_string
         self.exec_time += 0.2
 
@@ -284,7 +289,7 @@ class XCaliburD(Syringe):
 
         """
         if rel_position < 0:
-            cmd_string = 'D{0}'.format(rel_position)
+            cmd_string = 'D{0}'.format(abs(rel_position))
         else:
             cmd_string = 'P{0}'.format(rel_position)
         self.cmd_chain += cmd_string
@@ -293,12 +298,12 @@ class XCaliburD(Syringe):
     # Chainable set commands
     @execWrap
     def setSpeed(self, speed_code):
-        if not 0 <= slope_code <= 40:
+        if not 0 <= speed_code <= 40:
             raise(ValueError('`speed_code` [{0}] must be between 0 and 40'
                              ''.format(speed_code)))
         cmd_string = 'S{0}'.format(speed_code)
         self.sim_speed_change = True
-        self._simIncToPulses()
+        self._simIncToPulses(speed_code)
         self.cmd_chain += cmd_string
 
     @execWrap
@@ -344,9 +349,9 @@ class XCaliburD(Syringe):
         if not 0 < num_repeats < 30000:
             raise(ValueError('`num_repeats` [{0}] must be between 0 and 30000'
                              ''.format(num_repeats)))
-        cmd_string = 'G{0}'.num_repeats
+        cmd_string = 'G{0}'.format(num_repeats)
         self.cmd_chain += cmd_string
-        self.delay *= num_repeats
+        self.exec_time *= num_repeats
 
     @execWrap
     def markRepeatStart(self):
@@ -362,7 +367,7 @@ class XCaliburD(Syringe):
         cmd_string = 'M{0}'.format(delay)
         self.cmd_chain += cmd_string
 
-    @execwrap
+    @execWrap
     def haltExec(self, input_pin=0):
         """
         Used within a command string to halt execution until another [R]
@@ -426,7 +431,9 @@ class XCaliburD(Syringe):
         """ Returns the current port position (1-num_ports) """
         cmd_string = '?6'
         parsed_response = self._sendRcv(cmd_string)
-        return int(parsed_response[0])
+        port = int(parsed_response[0])
+        self.state['port'] = port
+        return port
 
     def getBufferStatus(self):
         """ Returns the current cmd buffer status (0=empty, 1=non-empty) """
@@ -436,7 +443,7 @@ class XCaliburD(Syringe):
 
     # Config commands
 
-    def setMicrostep(on=False):
+    def setMicrostep(self, on=False):
         """ Turns microstep mode on or off """
         cmd_string = 'N{0}'.format(int(on))
         parsed_response = self._sendRcv(cmd_string, execute=True)
@@ -472,8 +479,13 @@ class XCaliburD(Syringe):
         if execute:
             cmd_string += 'R'
         self.last_cmd = cmd_string
-        parsed_response = super(XCaliburD, self).sendRcv(cmd_string)
-        return parsed_response
+        try:
+            parsed_response = super(XCaliburD, self).sendRcv(cmd_string)
+            return parsed_response
+        except SyringeError, e:
+            self.resetChain()
+            raise e
+
 
     def _calcPlungerMoveTime(self, move_steps):
         """
