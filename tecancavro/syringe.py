@@ -34,7 +34,7 @@ class SyringeTimeout(Exception):
 
 class Syringe(object):
     """
-    General syringe class that may be inherited for specific syringe models
+    General syringe class that may be subclassed for specific syringe models
     or advanced functionality.
     """
 
@@ -67,16 +67,11 @@ class Syringe(object):
         returns the status code as a boolean (True = ready, False = busy).
 
         Defaults to the error code dictionary (`ERROR_DICT`) defined in the
-        `Syringe` class; however, this can be overridden in a child class.
+        `Syringe` class; however, this can be overridden in a subclass.
         """
         error_code = int(status_byte[4:8], 2)
         if error_code != 0:
-            # If class is inherited, check to see if ERROR_DICT is defined
-            # in child class
-            try:
-                error_dict = type(self).ERROR_DICT
-            except:
-                error_dict = Syringe.ERROR_DICT
+            error_dict = self.__class__.ERROR_DICT
             raise SyringeError(error_code, error_dict)
         ready = int(status_byte[2])
         if ready == 1:

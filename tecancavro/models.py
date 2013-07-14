@@ -56,7 +56,7 @@ class XCaliburD(Syringe):
                 0 [default] - full plunger force and default speed
                 1 - half plunger force and default speed
                 2 - one third plunger force and default speed
-                10-40 - full force and speed code X 
+                10-40 - full force and speed code X
 
         """
         super(XCaliburD, self).__init__(com_link)
@@ -72,8 +72,8 @@ class XCaliburD(Syringe):
             'cutoff_speed': None,
             'slope': slope
         }
-        if microstep: self.setMicrostep(on=True)
-        
+        self.setMicrostep(on=int(microstep))
+
         # Command chaining state information
         self.cmd_chain = ''
         self.exec_time = 0
@@ -92,7 +92,7 @@ class XCaliburD(Syringe):
         """
         if not init_force: init_force = self.init_force
         if not direction: direction = self.direction
-        cmd_string = '{0}{1}'.format(XCaliburD.DIR_DICT[direction],
+        cmd_string = '{0}{1}'.format(self.__class__.DIR_DICT[direction],
                                      init_force)
 
     # Convenience functions
@@ -238,7 +238,8 @@ class XCaliburD(Syringe):
             if abs(diff) >= 7: diff = -diff
             if diff < 0: direction = 'CCW'
             else: direction = 'CW'
-        cmd_string = '{0}{1}'.format(XCaliburD.DIR_DICT[direction][0], to_port)
+        cmd_string = '{0}{1}'.format(self.__class__.DIR_DICT[direction][0], 
+                                     to_port)
         self.cmd_chain += cmd_string
         self.exec_time += 0.2
 
@@ -546,7 +547,7 @@ class XCaliburD(Syringe):
         be higher than top speed, so it is automatically adjusted on the pump)
 
         """
-        top_speed = XCaliburD.SPEED_CODES[speed_inc]
+        top_speed = self.__class__.SPEED_CODES[speed_inc]
         self.sim_state['top_speed'] = top_speed
         if self.sim_state['start_speed'] > top_speed:
             self.sim_state['start_speed'] = top_speed
