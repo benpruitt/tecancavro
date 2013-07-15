@@ -412,43 +412,43 @@ class XCaliburD(Syringe):
     def getPlungerPos(self):
         """ Returns the absolute plunger position as an int (0-3000) """
         cmd_string = '?'
-        parsed_response = self.sendRcv(cmd_string)
-        return int(parsed_response[0])
+        data = self.sendRcv(cmd_string)
+        return int(data)
 
     def getStartSpeed(self):
         """ Returns the start speed as an int (in pulses/sec) """
         cmd_string = '?1'
-        parsed_response = self.sendRcv(cmd_string)
-        self.state['start_speed'] = int(parsed_response[0])
+        data = self.sendRcv(cmd_string)
+        self.state['start_speed'] = int(data)
         return self.state['start_speed']
 
     def getTopSpeed(self):
         """ Returns the top speed as an int (in pulses/sec) """
         cmd_string = '?2'
-        parsed_response = self.sendRcv(cmd_string)
-        self.state['top_speed'] = int(parsed_response[0])
+        data = self.sendRcv(cmd_string)
+        self.state['top_speed'] = int(data)
         return self.state['top_speed']
 
     def getCutoffSpeed(self):
         """ Returns the cutoff speed as an int (in pulses/sec) """
         cmd_string = '?3'
-        parsed_response = self.sendRcv(cmd_string)
-        self.state['cutoff_speed'] = int(parsed_response[0])
+        data = self.sendRcv(cmd_string)
+        self.state['cutoff_speed'] = int(data)
         return self.state['cutoff_speed']
 
     def getEncoderPos(self):
         """ Returns the current encoder count on the plunger axis """
         cmd_string = '?4'
-        parsed_response = self.sendRcv(cmd_string)
-        return int(parsed_response[0])
+        data = self.sendRcv(cmd_string)
+        return int(data)
 
     def getCurPort(self):
         """ Returns the current port position (1-num_ports) """
         cmd_string = '?6'
-        parsed_response = self.sendRcv(cmd_string)
+        data = self.sendRcv(cmd_string)
         with self._syringeErrorHandler():
             try:
-                port = int(parsed_response[0])
+                port = int(data)
             except ValueError:
                 raise SyringeError(7, self.__class__.ERROR_DICT)
             self.state['port'] = port
@@ -457,17 +457,16 @@ class XCaliburD(Syringe):
     def getBufferStatus(self):
         """ Returns the current cmd buffer status (0=empty, 1=non-empty) """
         cmd_string = '?10'
-        parsed_response = self.sendRcv(cmd_string)
-        return int(parsed_response[0])
+        data = self.sendRcv(cmd_string)
+        return int(data)
 
     # Config commands
 
     def setMicrostep(self, on=False):
         """ Turns microstep mode on or off """
         cmd_string = 'N{0}'.format(int(on))
-        parsed_response = self.sendRcv(cmd_string, execute=True)
+        self.sendRcv(cmd_string, execute=True)
         self.microstep = on
-        return parsed_response
 
     # Control commands
 
