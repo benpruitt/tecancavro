@@ -119,6 +119,7 @@ class XCaliburD(Syringe):
         try:
             return self.movePlungerRel(steps, execute=True)
         except SyringeError, e:
+            # Clear the previous commands from the command chain
             self.resetChain()
             self.waitReady()
             self.changePort(out_port, from_port=in_port)
@@ -129,6 +130,8 @@ class XCaliburD(Syringe):
             self.restoreSimSpeeds()
             self.movePlungerRel(steps)
             self.changePort(out_port, from_port=in_port)
+            # As this function doesn't change the original speeds:
+            self.sim_speed_change = False
             return self.executeChain()
 
     # Chain functions
@@ -163,12 +166,12 @@ class XCaliburD(Syringe):
         """
         self.cmd_chain = ''
         self.exec_time = 0
-        self.sim_speed_change = False
         if (on_execute and self.sim_speed_change):
             self.state['slope'] = self.sim_state['slope']
             self.state['microstep'] = self.sim_state['microstep']
             self.updateSpeeds()
             self.getCurPort()
+        self.sim_speed_change = False
         self.updateSimState()
 
     def updateSimState(self):

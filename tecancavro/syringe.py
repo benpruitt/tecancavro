@@ -53,10 +53,13 @@ class Syringe(object):
 
     def __init__(self, com_link):
         self.com_link = com_link
+        self._ready = False
+        self._prev_error_code = 0
+        self._repeat_error = False
 
     def _sendRcv(self, cmd_string):
         response = self.com_link.sendRcv(cmd_string)
-        ready = self._checkStatus(response['status_byte'])
+        ready = self._checkStatus(response['status_byte'])[0]
         data = response['data']
         return data, ready
 
@@ -70,22 +73,34 @@ class Syringe(object):
         `Syringe` class; however, this can be overridden in a subclass.
         """
         error_code = int(status_byte[4:8], 2)
+        ready = int(status_byte[2])
+        if ready == 1:
+            self._ready = True
+        else:
+            self._ready = False
+        if error_code == self._prev_erro_code:
+            self._repeat_error = True
+        else:
+            self._repeat_error = False
+        self._prev_error_code = error_code
         if error_code != 0:
             error_dict = self.__class__.ERROR_DICT
             raise SyringeError(error_code, error_dict)
-        ready = int(status_byte[2])
-        if ready == 1:
-            return True
-        else:
-            return False
+        return ready, error_code
 
     def _checkReady(self):
         """
         Checks to see if the syringe is ready to accept a new command (i.e.
         is not busy). Returns `True` if it is ready, or `False` if it is not.
         """
-        ready = self._sendRcv('Q')[1]
-        return ready
+        try:
+            ready = self._sendRcv('Q')[1]
+            return ready
+        except SyringeError, e:
+            if self.repeat_error:
+                return self._ready
+            else:
+                raise e
 
     def _waitReady(self, polling_interval=0.3, timeout=10):
         """
@@ -97,13 +112,10 @@ class Syringe(object):
         """
         start = time.time()
         while (start-time.time()) < (start+timeout):
-            try:
-                ready = self._checkReady()
-                if not ready:
-                    sleep(polling_interval)
-                else:
-                    return
-            except SyringeError:
+            ready = self._checkReady()
+            if not ready:
+                sleep(polling_interval)
+            else:
                 return
         raise(SyringeTimeout('Timeout while waiting for syringe to be ready'
                              ' to accept commands [{}]'.format(timeout)))
