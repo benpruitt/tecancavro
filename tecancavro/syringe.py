@@ -78,7 +78,7 @@ class Syringe(object):
             self._ready = True
         else:
             self._ready = False
-        if error_code == self._prev_erro_code:
+        if error_code == self._prev_error_code:
             self._repeat_error = True
         else:
             self._repeat_error = False
