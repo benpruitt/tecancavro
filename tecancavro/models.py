@@ -5,6 +5,7 @@ Contains Tecan Cavro model-specific classes that inherit from the `Syringe`
 class in syringe.py.
 
 """
+import time
 
 from math import sqrt
 from time import sleep
@@ -138,10 +139,15 @@ class XCaliburD(Syringe):
         Returns the estimated execution time (`self.exec_time`) for the chain.
 
         """
+        tic = time.time()
         self.sendRcv(self.cmd_chain, execute=True)
         exec_time = self.exec_time
         self.resetChain(on_execute=True)
-        return exec_time
+        toc = time.time()
+        wait_time = exec_time - (toc-tic)
+        if wait_time < 0:
+            wait_time = 0
+        return wait_time
 
     def resetChain(self, on_execute=False):
         """
@@ -227,7 +233,7 @@ class XCaliburD(Syringe):
     def changePort(self, to_port, from_port=None, direction='CW'):
         """
         Change port to `to_port`. If `from_port` is provided, the `direction`
-        will be calculated to minimize travel time. `direction` may also be 
+        will be calculated to minimize travel time. `direction` may also be
         provided directly.
 
         Args:
@@ -248,7 +254,7 @@ class XCaliburD(Syringe):
         if abs(diff) >= 7: diff = -diff
         if diff < 0: direction = 'CCW'
         else: direction = 'CW'
-        cmd_string = '{0}{1}'.format(self.__class__.DIR_DICT[direction][0], 
+        cmd_string = '{0}{1}'.format(self.__class__.DIR_DICT[direction][0],
                                      to_port)
         self.sim_state['port'] = to_port
         self.cmd_chain += cmd_string
@@ -482,12 +488,20 @@ class XCaliburD(Syringe):
             yield
         except SyringeError, e:
             if e.err_code == 7:
-                self.init()
+                try:
+                    self.init()
+                except SyringeError, e:
+                    if e.err_code == 7:
+                        pass
+                    else:
+                        raise e
+                self.waitBusy()
                 self.sendRcv(self.last_cmd)
             else:
                 self.resetChain()
                 raise e
         except Exception, e:
+            self.resetChain()
             raise e
 
     def sendRcv(self, cmd_string, execute=False):
