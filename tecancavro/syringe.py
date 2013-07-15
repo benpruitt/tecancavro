@@ -54,7 +54,7 @@ class Syringe(object):
     def __init__(self, com_link):
         self.com_link = com_link
 
-    def sendRcv(self, cmd_string):
+    def _sendRcv(self, cmd_string):
         response = self.com_link.sendRcv(cmd_string)
         ready = self._checkStatus(response['status_byte'])
         data = response['data']
@@ -84,7 +84,7 @@ class Syringe(object):
         Checks to see if the syringe is ready to accept a new command (i.e.
         is not busy). Returns `True` if it is ready, or `False` if it is not.
         """
-        ready = self.sendRcv('Q')[1]
+        ready = self._sendRcv('Q')[1]
         return ready
 
     def _waitReady(self, polling_interval=0.3, timeout=10):

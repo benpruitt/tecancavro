@@ -99,7 +99,7 @@ class XCaliburD(Syringe):
         cmd_string = '{0}{1},{2},{3}'.format(
                      self.__class__.DIR_DICT[direction][1],
                      init_force, in_port, out_port)
-        return self._sendRcv(cmd_string, execute=True)
+        return self.sendRcv(cmd_string, execute=True)
 
     # Convenience functions
 
@@ -136,7 +136,7 @@ class XCaliburD(Syringe):
         Returns the estimated execution time (`self.exec_time`) for the chain.
 
         """
-        self._sendRcv(self.cmd_chain, execute=True)
+        self.sendRcv(self.cmd_chain, execute=True)
         exec_time = self.exec_time
         self.resetChain(on_execute=True)
         return exec_time
@@ -389,7 +389,7 @@ class XCaliburD(Syringe):
             raise(ValueError('`input_pin` [{0}] must be between 0 and 2'
                              ''.format(input_sig)))
         cmd_string = 'H{0}'.format(input_sig)
-        return self._sendRcv(cmd_string)
+        return self.sendRcv(cmd_string)
 
     # Report commands
 
@@ -401,40 +401,40 @@ class XCaliburD(Syringe):
     def getPlungerPos(self):
         """ Returns the absolute plunger position as an int (0-3000) """
         cmd_string = '?'
-        parsed_response = self._sendRcv(cmd_string)
+        parsed_response = self.sendRcv(cmd_string)
         return int(parsed_response[0])
 
     def getStartSpeed(self):
         """ Returns the start speed as an int (in pulses/sec) """
         cmd_string = '?1'
-        parsed_response = self._sendRcv(cmd_string)
+        parsed_response = self.sendRcv(cmd_string)
         self.state['start_speed'] = int(parsed_response[0])
         return self.state['start_speed']
 
     def getTopSpeed(self):
         """ Returns the top speed as an int (in pulses/sec) """
         cmd_string = '?2'
-        parsed_response = self._sendRcv(cmd_string)
+        parsed_response = self.sendRcv(cmd_string)
         self.state['top_speed'] = int(parsed_response[0])
         return self.state['top_speed']
 
     def getCutoffSpeed(self):
         """ Returns the cutoff speed as an int (in pulses/sec) """
         cmd_string = '?3'
-        parsed_response = self._sendRcv(cmd_string)
+        parsed_response = self.sendRcv(cmd_string)
         self.state['cutoff_speed'] = int(parsed_response[0])
         return self.state['cutoff_speed']
 
     def getEncoderPos(self):
         """ Returns the current encoder count on the plunger axis """
         cmd_string = '?4'
-        parsed_response = self._sendRcv(cmd_string)
+        parsed_response = self.sendRcv(cmd_string)
         return int(parsed_response[0])
 
     def getCurPort(self):
         """ Returns the current port position (1-num_ports) """
         cmd_string = '?6'
-        parsed_response = self._sendRcv(cmd_string)
+        parsed_response = self.sendRcv(cmd_string)
         with self._syringeErrorHandler():
             try:
                 port = int(parsed_response[0])
@@ -446,7 +446,7 @@ class XCaliburD(Syringe):
     def getBufferStatus(self):
         """ Returns the current cmd buffer status (0=empty, 1=non-empty) """
         cmd_string = '?10'
-        parsed_response = self._sendRcv(cmd_string)
+        parsed_response = self.sendRcv(cmd_string)
         return int(parsed_response[0])
 
     # Config commands
@@ -454,7 +454,7 @@ class XCaliburD(Syringe):
     def setMicrostep(self, on=False):
         """ Turns microstep mode on or off """
         cmd_string = 'N{0}'.format(int(on))
-        parsed_response = self._sendRcv(cmd_string, execute=True)
+        parsed_response = self.sendRcv(cmd_string, execute=True)
         self.microstep = on
         return parsed_response
 
@@ -462,7 +462,7 @@ class XCaliburD(Syringe):
 
     def terminateCmd(self):
         cmd_string = 'T'
-        return self._sendRcv(cmd_string, execute=True)
+        return self.sendRcv(cmd_string, execute=True)
 
     # Communication handlers and special functions
 
@@ -481,14 +481,14 @@ class XCaliburD(Syringe):
         except SyringeError, e:
             if e.err_code == 7:
                 self.init()
-                self._sendRcv(self.last_cmd)
+                self.sendRcv(self.last_cmd)
             else:
                 self.resetChain()
                 raise e
         except Exception, e:
             raise e
 
-    def _sendRcv(self, cmd_string, execute=False):
+    def sendRcv(self, cmd_string, execute=False):
         """
         Send a raw command string and return a tuple containing the parsed
         response data: (Data, Ready). If the syringe is ready to accept
@@ -507,7 +507,7 @@ class XCaliburD(Syringe):
             cmd_string += 'R'
         self.last_cmd = cmd_string
         with self._syringeErrorHandler():
-            parsed_response = super(XCaliburD, self).sendRcv(cmd_string)
+            parsed_response = super(XCaliburD, self)._sendRcv(cmd_string)
             return parsed_response
 
     def _calcPlungerMoveTime(self, move_steps):
