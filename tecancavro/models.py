@@ -527,7 +527,6 @@ class XCaliburD(Syringe):
             cmd_string += 'R'
         self.last_cmd = cmd_string
         with self._syringeErrorHandler():
-            print cmd_string
             parsed_response = super(XCaliburD, self)._sendRcv(cmd_string)
             return parsed_response
 
@@ -609,11 +608,3 @@ class XCaliburD(Syringe):
             self.sim_state['start_speed'] = top_speed
         if self.sim_state['cutoff_speed'] > top_speed:
             self.sim_state['cutoff_speed'] = top_speed
-
-    def __del__(self):
-        """
-        Upon object deletion (e.g. after a KeyboardInterrupt), the current
-        command execution is terminated
-
-        """
-        self.terminateCmd()

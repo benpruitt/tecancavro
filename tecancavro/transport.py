@@ -121,10 +121,10 @@ class TecanAPISerial(TecanAPI):
 class TecanAPINode(TecanAPI):
     """
     `TecanAPI` subclass for node-based serial bridge communication.
-    Tailored for the ARC GT sequencing platform. 
+    Tailored for the ARC GT sequencing platform.
     """
 
-    def __init__(self, tecan_addr, node_addr, response_len=20, 
+    def __init__(self, tecan_addr, node_addr, response_len=20,
                  max_attempts=5):
         super(TecanAPINode, self).__init__(tecan_addr)
         self.node_addr = node_addr
@@ -134,25 +134,19 @@ class TecanAPINode(TecanAPI):
     def sendRcv(self, cmd):
         attempt_num = 0
         while attempt_num < self.max_attempts:
-            # try:
             attempt_num += 1
             if attempt_num == 1:
                 frame_out = self.emitFrame(cmd)
             else:
                 frame_out = self.emitRepeat()
             url = ('http://{0}/syringe?LENGTH={1}&SYRINGE={2}'
-                  ''.format(self.node_addr, self.response_len,
+                   ''.format(self.node_addr, self.response_len,
                             frame_out))
-            print url
             raw_in = self._jsonFetch(url)
             frame_in = self._analyzeFrame(raw_in)
             if frame_in:
-                print frame_in
                 return frame_in
             sleep(0.2 * attempt_num)
-            # except Exception, e:
-            #     raise e
-            #     #sleep(0.2)
         raise(TecanAPITimeout('Tecan HTTP communication exceeded max '
                               'attempts [{0}]'.format(
                               self.max_attempts)))
