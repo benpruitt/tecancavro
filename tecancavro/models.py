@@ -138,35 +138,54 @@ class XCaliburD(Syringe):
             self.movePlungerAbs(0)
             self.changePort(in_port, from_port=out_port)
             self.restoreSimSpeeds()
+            #Delay execution 200 ms to stop oscillations
+            self.delayExec(200)
             self.movePlungerRel(steps)
             self.changePort(out_port, from_port=in_port)
             return self.executeChain()
 
-    def primePort(self, in_port, volume_ul, out_port=None):
+    def primePort(self, in_port, volume_ul, speed_code=None,
+                  out_port=None):
+        """
+        Primes the line on `in_port` with `volume_ul`, which can
+        exceed the maximum syringe volume. If `speed_code` is 
+        provided, the syringe speed will be appended to the 
+        beginning of the command chain.
+        """
+
         if not out_port: out_port = self.waste_port
+        print speed_code
+        if speed_code is not None:
+            print 'setting speed'
+            self.setSpeed(speed_code)
         if volume_ul > self.syringe_ul:
             num_rounds = volume_ul / self.syringe_ul
-            remainder_ul = volume_ul % syringe_ul
+            remainder_ul = volume_ul % self.syringe_ul
             for x in xrange(num_rounds-1):
                 self.changePort(out_port, from_port=in_port)
                 self.movePlungerAbs(0)
                 self.changePort(in_port, from_port=out_port)
                 self.movePlungerAbs(3000)
+                delay = self.executeChain()
+                self.waitReady(delay)
             self.changePort(out_port)
             self.movePlungerAbs(0)
             self.changePort(in_port, from_port=out_port)
-            self.movePlungerAbs(_ulToSteps(remainder_ul))
+            self.movePlungerAbs(self._ulToSteps(remainder_ul))
             self.changePort(out_port, from_port=in_port)
             self.movePlungerAbs(0)
-            return self.executeChain()
+            delay = self.executeChain()
+            self.waitReady(delay)
         else:
             self.changePort(out_port)
             self.movePlungerAbs(0)
             self.changePort(in_port, from_port=out_port)
-            self.movePlungerAbs(_ulToSteps(volume_ul))
+            self.movePlungerAbs(self._ulToSteps(volume_ul))
             self.changePort(out_port, from_port=in_port)
             self.movePlungerAbs(0)
-            return self.executeChain()
+            print self.cmd_chain
+            delay = self.executeChain()
+            self.waitReady(delay)
 
     # Chain functions
 
@@ -417,10 +436,10 @@ class XCaliburD(Syringe):
     @execWrap
     def delayExec(self, delay_ms):
         """ Delays command execution for `delay` milliseconds """
-        if not 0 < delay < 30000:
+        if not 0 < delay_ms < 30000:
             raise(ValueError('`delay` [{0}] must be between 0 and 40000 ms'
-                             ''.format(delay)))
-        cmd_string = 'M{0}'.format(delay)
+                             ''.format(delay_ms)))
+        cmd_string = 'M{0}'.format(delay_ms)
         self.cmd_chain += cmd_string
 
     @execWrap
@@ -518,8 +537,16 @@ class XCaliburD(Syringe):
 
     # Communication handlers and special functions
 
-    def waitReady(self, timeout=10, polling_interval=0.3):
-        self._waitReady(timeout=10, polling_interval=0.3)
+    def waitReady(self, timeout=10, polling_interval=0.3, delay=None):
+        """
+        Waits a maximum of `timeout` seconds for the syringe to be
+        ready to accept another set command, polling every `polling_interval`
+        seconds. If a `delay` is provided, the function will sleep `delay`
+        seconds prior to beginning polling. 
+        
+        """
+        self._waitReady(timeout=timeout, polling_interval=polling_interval, 
+                        delay=delay)
 
     @contextmanager
     def _syringeErrorHandler(self):

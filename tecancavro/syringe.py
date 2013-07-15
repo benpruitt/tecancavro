@@ -96,6 +96,8 @@ class Syringe(object):
         Checks to see if the syringe is ready to accept a new command (i.e.
         is not busy). Returns `True` if it is ready, or `False` if it is not.
         """
+        if self._ready:
+            return True
         try:
             ready = self._sendRcv('Q')[1]
             return ready
@@ -105,7 +107,7 @@ class Syringe(object):
             else:
                 raise e
 
-    def _waitReady(self, polling_interval=0.3, timeout=10):
+    def _waitReady(self, polling_interval=0.3, timeout=10, delay=None):
         """
         Waits for the syringe to be ready to accept a command
 
@@ -113,6 +115,8 @@ class Syringe(object):
             `polling_interval` (int): frequency of polling in seconds
             `timeout` (int): max wait time in seconds
         """
+        if delay:
+            sleep(delay)
         start = time.time()
         while (start-time.time()) < (start+timeout):
             ready = self._checkReady()
@@ -122,6 +126,3 @@ class Syringe(object):
                 return
         raise(SyringeTimeout('Timeout while waiting for syringe to be ready'
                              ' to accept commands [{}]'.format(timeout)))
-
-    def __del__(self):
-        self.terminateCmd()
