@@ -1,7 +1,10 @@
 import time
 
-# Easily swapped for Gevent sleep
-from time import sleep
+try:
+    from gevent import monkey; monkey.patch_all(thread=False)
+    from gevent import sleep
+except:
+    from time import sleep
 
 
 class SyringeError(Exception):

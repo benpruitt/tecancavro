@@ -12,6 +12,12 @@ from time import sleep
 from functools import wraps
 from contextlib import contextmanager
 
+try:
+    from gevent import monkey; monkey.patch_all(thread=False)
+    from gevent import sleep
+except:
+    from time import sleep
+
 from syringe import Syringe, SyringeError, SyringeTimeout
 
 
@@ -68,6 +74,7 @@ class XCaliburD(Syringe):
         self.waste_port = waste_port
         self.init_force = init_force
         self.state = {
+            'plunger_pos': None,
             'port': None,
             'microstep': microstep,
             'start_speed': None,
@@ -85,6 +92,7 @@ class XCaliburD(Syringe):
 
         # Init functions
         self.updateSpeeds()
+        self.getPlungerPos()
         self.getCurPort()
         self.updateSimState()
 
@@ -134,6 +142,32 @@ class XCaliburD(Syringe):
             self.changePort(out_port, from_port=in_port)
             return self.executeChain()
 
+    def primePort(self, in_port, volume_ul, out_port=None):
+        if not out_port: out_port = self.waste_port
+        if volume_ul > self.syringe_ul:
+            num_rounds = volume_ul / self.syringe_ul
+            remainder_ul = volume_ul % syringe_ul
+            for x in xrange(num_rounds-1):
+                self.changePort(out_port, from_port=in_port)
+                self.movePlungerAbs(0)
+                self.changePort(in_port, from_port=out_port)
+                self.movePlungerAbs(3000)
+            self.changePort(out_port)
+            self.movePlungerAbs(0)
+            self.changePort(in_port, from_port=out_port)
+            self.movePlungerAbs(_ulToSteps(remainder_ul))
+            self.changePort(out_port, from_port=in_port)
+            self.movePlungerAbs(0)
+            return self.executeChain()
+        else:
+            self.changePort(out_port)
+            self.movePlungerAbs(0)
+            self.changePort(in_port, from_port=out_port)
+            self.movePlungerAbs(_ulToSteps(volume_ul))
+            self.changePort(out_port, from_port=in_port)
+            self.movePlungerAbs(0)
+            return self.executeChain()
+
     # Chain functions
 
     def executeChain(self):
@@ -172,6 +206,7 @@ class XCaliburD(Syringe):
             self.updateSpeeds()
             self.getCurPort()
         self.sim_speed_change = False
+        self.getPlungerPos()
         self.updateSimState()
 
     def updateSimState(self):
@@ -289,10 +324,11 @@ class XCaliburD(Syringe):
                                  ' when operating in microstep mode'.format(
                                  self.port_num)))
         cmd_string = 'A{0}'.format(abs_position)
-        cur_pos = self.getPlungerPos()
-        delta_pos = abs(cur_pos-abs_position)
+        cur_pos = self.sim_state['plunger_pos']
+        delta_pos = cur_pos-abs_position
+        self.sim_state['plunger_pos'] += delta_pos
         self.cmd_chain += cmd_string
-        self.exec_time += self._calcPlungerMoveTime(delta_pos)
+        self.exec_time += self._calcPlungerMoveTime(abs(delta_pos))
 
     @execWrap
     def movePlungerRel(self, rel_position):
@@ -311,6 +347,7 @@ class XCaliburD(Syringe):
             cmd_string = 'D{0}'.format(abs(rel_position))
         else:
             cmd_string = 'P{0}'.format(rel_position)
+        self.sim_state['plunger_pos'] += rel_position
         self.cmd_chain += cmd_string
         self.exec_time += self._calcPlungerMoveTime(abs(rel_position))
 
@@ -417,7 +454,8 @@ class XCaliburD(Syringe):
         """ Returns the absolute plunger position as an int (0-3000) """
         cmd_string = '?'
         data = self.sendRcv(cmd_string)
-        return int(data)
+        self.state['plunger_pos'] = int(data)
+        return self.state['plunger_pos']
 
     def getStartSpeed(self):
         """ Returns the start speed as an int (in pulses/sec) """

@@ -23,7 +23,11 @@ try:
 except:
     import json
 
-from time import sleep
+try:
+    from gevent import monkey; monkey.patch_all(thread=False)
+    from gevent import sleep
+except:
+    from time import sleep
 
 from tecanapi import TecanAPI, TecanAPITimeout
 
