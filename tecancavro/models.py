@@ -104,6 +104,7 @@ class XCaliburD(Syringe):
                      init_force, in_port, out_port)
         self.sendRcv(cmd_string, execute=True)
         self.waitReady()
+        return 0  # 0 seconds left to wait
 
     # Convenience functions
 
@@ -194,6 +195,9 @@ class XCaliburD(Syringe):
 
     def restoreSimSpeeds(self):
         """ Restores simulation speeds cached by `self.cacheSimSpeeds` """
+        self.sim_state['start_speed'] = self._cached_start_speed
+        self.sim_state['top_speed'] = self._cached_top_speed
+        self.sim_state['cutoff_speed'] = self._cached_cutoff_speed
         self.setTopSpeed(self._cached_top_speed)
         self.setCutoffSpeed(self._cached_cutoff_speed)
         self.setStartSpeed(self._cached_start_speed)
