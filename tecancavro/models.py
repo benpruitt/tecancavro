@@ -526,7 +526,8 @@ class XCaliburD(Syringe):
         self.last_cmd = cmd_string
         with self._syringeErrorHandler():
             parsed_response = super(XCaliburD, self)._sendRcv(cmd_string)
-            return parsed_response
+            data = parsed_response[0]
+            return data
 
     def _calcPlungerMoveTime(self, move_steps):
         """
