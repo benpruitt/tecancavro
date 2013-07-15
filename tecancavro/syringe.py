@@ -104,8 +104,7 @@ class Syringe(object):
                 else:
                     return
             except SyringeError:
-                if ready:
-                    return
+                return
         raise(SyringeTimeout('Timeout while waiting for syringe to be ready'
                              ' to accept commands [{}]'.format(timeout)))
 
