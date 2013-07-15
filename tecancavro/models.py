@@ -102,7 +102,8 @@ class XCaliburD(Syringe):
         cmd_string = '{0}{1},{2},{3}'.format(
                      self.__class__.DIR_DICT[direction][1],
                      init_force, in_port, out_port)
-        return self.sendRcv(cmd_string, execute=True)
+        self.sendRcv(cmd_string, execute=True)
+        self.waitReady()
 
     # Convenience functions
 
