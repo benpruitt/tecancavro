@@ -148,7 +148,7 @@ class XCaliburD(Syringe):
         wait_time = exec_time - (toc-tic)
         if wait_time < 0:
             wait_time = 0
-        return wait_time
+        return int(wait_time)
 
     def resetChain(self, on_execute=False):
         """
