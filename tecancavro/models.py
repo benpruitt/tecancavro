@@ -163,6 +163,7 @@ class XCaliburD(Syringe):
         """
         self.cmd_chain = ''
         self.exec_time = 0
+        self.sim_speed_change = False
         if (on_execute and self.sim_speed_change):
             self.state['slope'] = self.sim_state['slope']
             self.state['microstep'] = self.sim_state['microstep']
