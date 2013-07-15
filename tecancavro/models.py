@@ -9,6 +9,7 @@ class in syringe.py.
 from math import sqrt
 from time import sleep
 from functools import wraps
+from contextlib import contextmanager
 
 from syringe import Syringe, SyringeError, SyringeTimeout
 
@@ -31,7 +32,7 @@ class XCaliburD(Syringe):
                    37: 16, 38: 14, 39: 12, 40: 10}
 
     def __init__(self, com_link, num_ports=9, syringe_ul=1000, direction='CW',
-                 microstep=False, waste_port=None, slope=14, init_force=0):
+                 microstep=False, waste_port=9, slope=14, init_force=0):
         """
         Object initialization function.
 
@@ -49,7 +50,7 @@ class XCaliburD(Syringe):
                 [default] - False (factory default)
             `waste_port` (int) : waste port for `extractToWaste`-like
                                  convenience functions
-                [default] - None
+                [default] - 9 (factory default for init out port)
             `slope` (int) : slope setting
                 [default] - 14 (factory default)
             `init_force` (int) : initialization force or speed
@@ -82,11 +83,6 @@ class XCaliburD(Syringe):
         self.sim_state = {k: v for k,v in self.state.iteritems()}
 
         # Init functions
-        if self.waste_port:
-            self.init(out_port=self.waste_port)
-        else:
-            self.init()
-        self.waitReady()
         self.updateSpeeds()
         self.getCurPort()
         self.updateSimState()
@@ -100,8 +96,9 @@ class XCaliburD(Syringe):
         """
         if not init_force: init_force = self.init_force
         if not direction: direction = self.direction
-        cmd_string = '{0}{1},{2},{3}'.format(self.__class__.DIR_DICT[direction][1],
-                                     init_force, in_port, out_port)
+        cmd_string = '{0}{1},{2},{3}'.format(
+                     self.__class__.DIR_DICT[direction][1],
+                     init_force, in_port, out_port)
         return self._sendRcv(cmd_string, execute=True)
 
     # Convenience functions
@@ -128,6 +125,7 @@ class XCaliburD(Syringe):
             self.changePort(in_port, from_port=out_port)
             self.restoreSimSpeeds()
             self.movePlungerRel(steps)
+            self.changePort(out_port, from_port=in_port)
             return self.executeChain()
 
     # Chain functions
@@ -437,9 +435,13 @@ class XCaliburD(Syringe):
         """ Returns the current port position (1-num_ports) """
         cmd_string = '?6'
         parsed_response = self._sendRcv(cmd_string)
-        port = int(parsed_response[0])
-        self.state['port'] = port
-        return port
+        with self._syringeErrorHandler():
+            try:
+                port = int(parsed_response[0])
+            except ValueError:
+                raise SyringeError(7, self.__class__.ERROR_DICT)
+            self.state['port'] = port
+            return port
 
     def getBufferStatus(self):
         """ Returns the current cmd buffer status (0=empty, 1=non-empty) """
@@ -467,6 +469,25 @@ class XCaliburD(Syringe):
     def waitReady(self, timeout=10, polling_interval=0.3):
         self._waitReady(timeout=10, polling_interval=0.3)
 
+    @contextmanager
+    def _syringeErrorHandler(self):
+        """
+        Context manager to handle `SyringeError` based on error code. Right
+        now this just handles "Device Not Initialized" errors (code 7) by
+        initializing the pump and then re-running the previous command.
+        """
+        try:
+            yield
+        except SyringeError, e:
+            if e.err_code == 7:
+                self.init()
+                self._sendRcv(self.last_cmd)
+            else:
+                self.resetChain()
+                raise e
+        except Exception, e:
+            raise e
+
     def _sendRcv(self, cmd_string, execute=False):
         """
         Send a raw command string and return a tuple containing the parsed
@@ -485,13 +506,9 @@ class XCaliburD(Syringe):
         if execute:
             cmd_string += 'R'
         self.last_cmd = cmd_string
-        try:
+        with self._syringeErrorHandler():
             parsed_response = super(XCaliburD, self).sendRcv(cmd_string)
             return parsed_response
-        except SyringeError, e:
-            self.resetChain()
-            raise e
-
 
     def _calcPlungerMoveTime(self, move_steps):
         """
