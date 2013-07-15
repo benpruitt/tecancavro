@@ -98,12 +98,14 @@ class Syringe(object):
         start = time.time()
         while (start-time.time()) < (start+timeout):
             try:
-                if not self._checkReady():
+                ready = self._checkReady()
+                if not ready:
                     sleep(polling_interval)
                 else:
                     return
             except SyringeError:
-                pass
+                if ready:
+                    return
         raise(SyringeTimeout('Timeout while waiting for syringe to be ready'
                              ' to accept commands [{}]'.format(timeout)))
 
