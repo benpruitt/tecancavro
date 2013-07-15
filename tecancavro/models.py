@@ -130,8 +130,6 @@ class XCaliburD(Syringe):
             self.restoreSimSpeeds()
             self.movePlungerRel(steps)
             self.changePort(out_port, from_port=in_port)
-            # As this function doesn't change the original speeds:
-            self.sim_speed_change = False
             return self.executeChain()
 
     # Chain functions
