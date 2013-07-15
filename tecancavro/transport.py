@@ -143,6 +143,7 @@ class TecanAPINode(TecanAPI):
             url = ('http://{0}/syringe?LENGTH={1}&SYRINGE={2}'
                   ''.format(self.node_addr, self.response_len,
                             frame_out))
+            print url
             raw_in = self._jsonFetch(url)
             frame_in = self._analyzeFrame(raw_in)
             if frame_in:
@@ -152,7 +153,7 @@ class TecanAPINode(TecanAPI):
             # except Exception, e:
             #     raise e
             #     #sleep(0.2)
-        raise(TecanAPITimeout('Tecan serial communication exceeded max '
+        raise(TecanAPITimeout('Tecan HTTP communication exceeded max '
                               'attempts [{0}]'.format(
                               self.max_attempts)))
 

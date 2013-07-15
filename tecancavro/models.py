@@ -96,6 +96,8 @@ class XCaliburD(Syringe):
         """
         if not init_force: init_force = self.init_force
         if not direction: direction = self.direction
+        if self.waste_port and out_port == 0:
+            out_port = self.waste_port
         cmd_string = '{0}{1},{2},{3}'.format(
                      self.__class__.DIR_DICT[direction][1],
                      init_force, in_port, out_port)
@@ -507,6 +509,7 @@ class XCaliburD(Syringe):
             cmd_string += 'R'
         self.last_cmd = cmd_string
         with self._syringeErrorHandler():
+            print cmd_string
             parsed_response = super(XCaliburD, self)._sendRcv(cmd_string)
             return parsed_response
 
