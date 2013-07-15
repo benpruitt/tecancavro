@@ -97,7 +97,7 @@ class Syringe(object):
             ready = self._sendRcv('Q')[1]
             return ready
         except SyringeError, e:
-            if self.repeat_error:
+            if self._repeat_error:
                 return self._ready
             else:
                 raise e
