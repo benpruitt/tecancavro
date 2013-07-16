@@ -154,9 +154,7 @@ class XCaliburD(Syringe):
         """
 
         if not out_port: out_port = self.waste_port
-        print speed_code
         if speed_code is not None:
-            print 'setting speed'
             self.setSpeed(speed_code)
         if volume_ul > self.syringe_ul:
             num_rounds = volume_ul / self.syringe_ul
@@ -183,7 +181,6 @@ class XCaliburD(Syringe):
             self.movePlungerAbs(self._ulToSteps(volume_ul))
             self.changePort(out_port, from_port=in_port)
             self.movePlungerAbs(0)
-            print self.cmd_chain
             delay = self.executeChain()
             self.waitReady(delay)
 
