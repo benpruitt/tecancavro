@@ -307,7 +307,11 @@ class XCaliburD(Syringe):
             raise(ValueError('`in_port` [{0}] must be between 1 and '
                              '`num_ports` [{1}]'.format(to_port,
                              self.num_ports)))
-        if not from_port: from_port = self.sim_state['port']
+        if not from_port:
+            if self.sim_state['port']:
+                from_port = self.sim_state['port']
+            else:
+                from_port = 1
         diff = to_port - from_port
         if abs(diff) >= 7: diff = -diff
         if diff < 0: direction = 'CCW'
@@ -556,6 +560,7 @@ class XCaliburD(Syringe):
             yield
         except SyringeError, e:
             if e.err_code == 7:
+                last_cmd = self.last_cmd
                 try:
                     self.init()
                 except SyringeError, e:
@@ -563,8 +568,8 @@ class XCaliburD(Syringe):
                         pass
                     else:
                         raise e
-                self.waitBusy()
-                self.sendRcv(self.last_cmd)
+                self.waitReady()
+                self.sendRcv(last_cmd)
             else:
                 self.resetChain()
                 raise e
