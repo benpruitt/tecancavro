@@ -148,8 +148,8 @@ class XCaliburD(Syringe):
                   out_port=None):
         """
         Primes the line on `in_port` with `volume_ul`, which can
-        exceed the maximum syringe volume. If `speed_code` is 
-        provided, the syringe speed will be appended to the 
+        exceed the maximum syringe volume. If `speed_code` is
+        provided, the syringe speed will be appended to the
         beginning of the command chain.
         """
 
@@ -159,6 +159,10 @@ class XCaliburD(Syringe):
         if volume_ul > self.syringe_ul:
             num_rounds = volume_ul / self.syringe_ul
             remainder_ul = volume_ul % self.syringe_ul
+            if remainder_ul != 0:
+                last_round_ul = self.syringe_ul
+            else:
+                laser_round_ul = remainder_ul
             for x in xrange(num_rounds-1):
                 self.changePort(out_port, from_port=in_port)
                 self.movePlungerAbs(0)
@@ -543,10 +547,10 @@ class XCaliburD(Syringe):
         Waits a maximum of `timeout` seconds for the syringe to be
         ready to accept another set command, polling every `polling_interval`
         seconds. If a `delay` is provided, the function will sleep `delay`
-        seconds prior to beginning polling. 
-        
+        seconds prior to beginning polling.
+
         """
-        self._waitReady(timeout=timeout, polling_interval=polling_interval, 
+        self._waitReady(timeout=timeout, polling_interval=polling_interval,
                         delay=delay)
 
     @contextmanager
