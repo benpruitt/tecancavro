@@ -388,27 +388,21 @@ class XCaliburD(Syringe):
 
     @execWrap
     def setStartSpeed(self, pulses_per_sec):
-        if not 50 <= pulses_per_sec <= 1000:
-            raise(ValueError('Start speed `pulses_per_sec` [{0}] must be '
-                             'between 50 and 1000'.format(pulses_per_sec)))
+        """ Set start speed in `pulses_per_sec` [50-1000] """
         cmd_string = 'v{0}'.format(pulses_per_sec)
         self.sim_speed_change = True
         self.cmd_chain += cmd_string
 
     @execWrap
     def setTopSpeed(self, pulses_per_sec):
-        if not 5 <= pulses_per_sec <= 6000:
-            raise(ValueError('Cutoff speed `pulses_per_sec` [{0}] must be '
-                             'between 5 and 6000'.format(pulses_per_sec)))
+        """ Set top speed in `pulses_per_sec` [5-6000] """
         cmd_string = 'V{0}'.format(pulses_per_sec)
         self.sim_speed_change = True
         self.cmd_chain += cmd_string
 
     @execWrap
     def setCutoffSpeed(self, pulses_per_sec):
-        if not 50 <= pulses_per_sec <= 2700:
-            raise(ValueError('Cutoff speed `pulses_per_sec` [{0}] must be '
-                             'between 50 and 2700'.format(pulses_per_sec)))
+        """ Set cutoff speed in `pulses_per_sec` [50-2700] """
         cmd_string = 'c{0}'.format(pulses_per_sec)
         self.sim_speed_change = True
         self.cmd_chain += cmd_string
