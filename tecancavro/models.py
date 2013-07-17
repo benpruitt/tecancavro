@@ -117,7 +117,8 @@ class XCaliburD(Syringe):
 
     # Convenience functions
 
-    def extractToWaste(self, in_port, volume_ul, out_port=None):
+    def extractToWaste(self, in_port, volume_ul, out_port=None, 
+                       minimal_reset=False):
         """
         Extracts `volume_ul` from `in_port`. If the relative plunger move
         exceeds the encoder range, the syringe will dispense to `out_port`,
@@ -129,7 +130,8 @@ class XCaliburD(Syringe):
         self.waitReady()
         self.changePort(in_port)
         try:
-            return self.movePlungerRel(steps, execute=True)
+            return self.movePlungerRel(steps, execute=True, 
+                   minimal_reset=minimal_reset)
         except SyringeError, e:
             # Clear the previous commands from the command chain
             self.resetChain()
@@ -144,7 +146,7 @@ class XCaliburD(Syringe):
             self.delayExec(200)
             self.movePlungerRel(steps)
             self.changePort(out_port, from_port=in_port)
-            return self.executeChain()
+            return self.executeChain(minimal_reset=minimal_reset)
 
     def primePort(self, in_port, volume_ul, speed_code=None,
                   out_port=None):
@@ -189,23 +191,24 @@ class XCaliburD(Syringe):
 
     # Chain functions
 
-    def executeChain(self):
+    def executeChain(self, minimal_reset=False):
         """
         Executes and resets the current command chain (`self.cmd_chain`).
         Returns the estimated execution time (`self.exec_time`) for the chain.
 
         """
+        # Compensaate for reset time (tic/toc) prior to returning wait_time
         tic = time.time()
         self.sendRcv(self.cmd_chain, execute=True)
         exec_time = self.exec_time
-        self.resetChain(on_execute=True)
+        self.resetChain(on_execute=True, minimal_reset=minimal_reset)
         toc = time.time()
         wait_time = exec_time - (toc-tic)
         if wait_time < 0:
             wait_time = 0
         return wait_time
 
-    def resetChain(self, on_execute=False):
+    def resetChain(self, on_execute=False, minimal_reset=False):
         """
         Resets the command chain (`self.cmd_chain`) and execution time
         (`self.exec_time`). Optionally updates `slope` and `microstep`
@@ -216,17 +219,27 @@ class XCaliburD(Syringe):
                                   the chain being reset was executed, which
                                   will cue slope and microstep state
                                   updating (as well as speed updating).
+            `minimal_reset` (bool) : minimizes additional polling of the 
+                                     syringe pump and updates state based
+                                     on simulated calculations. Should
+                                     be extremely reliable but use with
+                                     caution.
         """
+        print 'resetting chain'
         self.cmd_chain = ''
         self.exec_time = 0
         if (on_execute and self.sim_speed_change):
-            self.state['slope'] = self.sim_state['slope']
-            self.state['microstep'] = self.sim_state['microstep']
-            self.updateSpeeds()
-            self.getCurPort()
+            if minimal_reset:
+                self.state = {k: v for k,v in self.sim_state.iteritems()}
+            else:
+                self.state['slope'] = self.sim_state['slope']
+                self.state['microstep'] = self.sim_state['microstep']
+                self.updateSpeeds()
+                self.getCurPort()
+                self.getPlungerPos()
         self.sim_speed_change = False
-        self.getPlungerPos()
         self.updateSimState()
+        print 'chain reset'
 
     def updateSimState(self):
         """
@@ -269,9 +282,13 @@ class XCaliburD(Syringe):
             execute = False
             if 'execute' in kwargs:
                 execute = kwargs.pop('execute')
+            if 'minimal_reset' in kwargs:
+                minimal_reset = kwargs.pop('minimal_reset')
+            else:
+                minimal_reset=False
             func(self, *args, **kwargs)
             if execute:
-                return self.executeChain()
+                return self.executeChain(minimal_reset=minimal_reset)
         return addAndExec
 
     # Chainable convenience functions
@@ -351,7 +368,7 @@ class XCaliburD(Syringe):
         cmd_string = 'A{0}'.format(abs_position)
         cur_pos = self.sim_state['plunger_pos']
         delta_pos = cur_pos-abs_position
-        self.sim_state['plunger_pos'] += delta_pos
+        self.sim_state['plunger_pos'] = abs_position
         self.cmd_chain += cmd_string
         self.exec_time += self._calcPlungerMoveTime(abs(delta_pos))
 
