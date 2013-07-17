@@ -161,25 +161,22 @@ class XCaliburD(Syringe):
         if volume_ul > self.syringe_ul:
             num_rounds = volume_ul / self.syringe_ul
             remainder_ul = volume_ul % self.syringe_ul
-            if remainder_ul == 0:
-                last_round_ul = self.syringe_ul
-            else:
-                laser_round_ul = remainder_ul
-            for x in xrange(num_rounds-1):
+            for x in xrange(num_rounds):
                 self.changePort(out_port, from_port=in_port)
                 self.movePlungerAbs(0)
                 self.changePort(in_port, from_port=out_port)
                 self.movePlungerAbs(3000)
                 delay = self.executeChain()
                 self.waitReady(delay)
-            self.changePort(out_port)
-            self.movePlungerAbs(0)
-            self.changePort(in_port, from_port=out_port)
-            self.movePlungerAbs(self._ulToSteps(remainder_ul))
-            self.changePort(out_port, from_port=in_port)
-            self.movePlungerAbs(0)
-            delay = self.executeChain()
-            self.waitReady(delay)
+            if remainder_ul != 0:
+                self.changePort(out_port, from_port=in_port)
+                self.movePlungerAbs(0)
+                self.changePort(in_port, from_port=out_port)
+                self.movePlungerAbs(self._ulToSteps(remainder_ul))
+                self.changePort(out_port, from_port=in_port)
+                self.movePlungerAbs(0)
+                delay = self.executeChain()
+                self.waitReady(delay)
         else:
             self.changePort(out_port)
             self.movePlungerAbs(0)
