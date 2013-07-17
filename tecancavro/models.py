@@ -101,7 +101,8 @@ class XCaliburD(Syringe):
              out_port=0):
         """
         Initialize pump. Uses instance `self.init_force` and `self.direction`
-        if not provided
+        if not provided.
+
         """
         if not init_force: init_force = self.init_force
         if not direction: direction = self.direction
@@ -121,6 +122,7 @@ class XCaliburD(Syringe):
         Extracts `volume_ul` from `in_port`. If the relative plunger move
         exceeds the encoder range, the syringe will dispense to `out_port`,
         which defaults to `self.waste_port`.
+
         """
         if not out_port: out_port = self.waste_port
         steps = self._ulToSteps(volume_ul)
@@ -151,15 +153,15 @@ class XCaliburD(Syringe):
         exceed the maximum syringe volume. If `speed_code` is
         provided, the syringe speed will be appended to the
         beginning of the command chain.
-        """
 
+        """
         if not out_port: out_port = self.waste_port
         if speed_code is not None:
             self.setSpeed(speed_code)
         if volume_ul > self.syringe_ul:
             num_rounds = volume_ul / self.syringe_ul
             remainder_ul = volume_ul % self.syringe_ul
-            if remainder_ul != 0:
+            if remainder_ul == 0:
                 last_round_ul = self.syringe_ul
             else:
                 laser_round_ul = remainder_ul
