@@ -126,8 +126,8 @@ class XCaliburD(Syringe):
         """
         if not out_port: out_port = self.waste_port
         steps = self._ulToSteps(volume_ul)
-        self.changePort(in_port)
         self.waitReady()
+        self.changePort(in_port)
         try:
             return self.movePlungerRel(steps, execute=True)
         except SyringeError, e:
@@ -256,8 +256,10 @@ class XCaliburD(Syringe):
         self.sim_state['top_speed'] = self._cached_top_speed
         self.sim_state['cutoff_speed'] = self._cached_cutoff_speed
         self.setTopSpeed(self._cached_top_speed)
-        self.setCutoffSpeed(self._cached_cutoff_speed)
-        self.setStartSpeed(self._cached_start_speed)
+        if 50 <= self._cached_start_speed <= 1000:
+            self.setStartSpeed(self._cached_start_speed)
+        if 50 <= self._cached_cutoff_speed <= 2700:
+            self.setCutoffSpeed(self._cached_cutoff_speed)
 
     def execWrap(func):
         """
