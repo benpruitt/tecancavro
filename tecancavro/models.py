@@ -128,6 +128,7 @@ class XCaliburD(Syringe):
         if not out_port: out_port = self.waste_port
         steps = self._ulToSteps(volume_ul)
         self.waitReady()
+        self.cacheSimSpeeds()
         self.changePort(in_port)
         try:
             return self.movePlungerRel(steps, execute=True, 
@@ -135,9 +136,9 @@ class XCaliburD(Syringe):
         except SyringeError, e:
             # Clear the previous commands from the command chain
             self.resetChain()
+            self.restoreSimSpeeds()
             self.waitReady()
             self.changePort(out_port, from_port=in_port)
-            self.cacheSimSpeeds()
             self.setSpeed(0)
             self.movePlungerAbs(0)
             self.changePort(in_port, from_port=out_port)
@@ -225,7 +226,6 @@ class XCaliburD(Syringe):
                                      be extremely reliable but use with
                                      caution.
         """
-        print 'resetting chain'
         self.cmd_chain = ''
         self.exec_time = 0
         if (on_execute and self.sim_speed_change):
@@ -239,7 +239,6 @@ class XCaliburD(Syringe):
                 self.getPlungerPos()
         self.sim_speed_change = False
         self.updateSimState()
-        print 'chain reset'
 
     def updateSimState(self):
         """
