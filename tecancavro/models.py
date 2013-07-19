@@ -127,8 +127,8 @@ class XCaliburD(Syringe):
         """
         if not out_port: out_port = self.waste_port
         steps = self._ulToSteps(volume_ul)
-        self.waitReady()
         self.cacheSimSpeeds()
+        self.waitReady()
         self.changePort(in_port)
         try:
             return self.movePlungerRel(steps, execute=True, 
@@ -136,7 +136,6 @@ class XCaliburD(Syringe):
         except SyringeError, e:
             # Clear the previous commands from the command chain
             self.resetChain()
-            self.restoreSimSpeeds()
             self.waitReady()
             self.changePort(out_port, from_port=in_port)
             self.setSpeed(0)
@@ -164,16 +163,16 @@ class XCaliburD(Syringe):
         if volume_ul > self.syringe_ul:
             num_rounds = volume_ul / self.syringe_ul
             remainder_ul = volume_ul % self.syringe_ul
+            self.changePort(out_port, from_port=in_port)
+            self.movePlungerAbs(0)
             for x in xrange(num_rounds):
-                self.changePort(out_port, from_port=in_port)
-                self.movePlungerAbs(0)
                 self.changePort(in_port, from_port=out_port)
                 self.movePlungerAbs(3000)
+                self.changePort(out_port, from_port=in_port)
+                self.movePlungerAbs(0)
                 delay = self.executeChain()
                 self.waitReady(delay)
             if remainder_ul != 0:
-                self.changePort(out_port, from_port=in_port)
-                self.movePlungerAbs(0)
                 self.changePort(in_port, from_port=out_port)
                 self.movePlungerAbs(self._ulToSteps(remainder_ul))
                 self.changePort(out_port, from_port=in_port)
@@ -574,12 +573,13 @@ class XCaliburD(Syringe):
         try:
             yield
         except SyringeError, e:
-            if e.err_code == 7:
+            if e.err_code in [7, 9, 10]:
                 last_cmd = self.last_cmd
+                self.resetChain()
                 try:
                     self.init()
                 except SyringeError, e:
-                    if e.err_code == 7:
+                    if e.err_code in [7, 9, 10]:
                         pass
                     else:
                         raise e
