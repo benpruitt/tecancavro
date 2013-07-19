@@ -6,6 +6,7 @@ class in syringe.py.
 
 """
 import time
+import logging
 
 from math import sqrt
 from time import sleep
@@ -39,7 +40,8 @@ class XCaliburD(Syringe):
                    37: 16, 38: 14, 39: 12, 40: 10}
 
     def __init__(self, com_link, num_ports=9, syringe_ul=1000, direction='CW',
-                 microstep=False, waste_port=9, slope=14, init_force=0):
+                 microstep=False, waste_port=9, slope=14, init_force=0,
+                 debug=False, debug_log_path='.'):
         """
         Object initialization function.
 
@@ -84,6 +86,11 @@ class XCaliburD(Syringe):
         }
         self.setMicrostep(on=microstep)
 
+        # Handle debug mode init
+        self.debug = debug
+        if self.debug:
+            self.initDebugLogging(debug_log_path)
+
         # Command chaining state information
         self.cmd_chain = ''
         self.exec_time = 0
@@ -96,6 +103,18 @@ class XCaliburD(Syringe):
         self.getCurPort()
         self.updateSimState()
 
+    def initDebugLogging(self, debug_log_path):
+        self.logger = logging.getLogger('XCaliburD')
+        fp = debug_log_path.rstrip('/') + '/xcaliburd_debug.log'
+        hdlr = logging.FileHandler(fp)
+        formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
+        hdlr.setFormatter(formatter)
+        logger.addHandler(hdlr)
+        logger.setLevel(logging.DEBUG)
+
+    def logDebug(self, msg):
+        if self.debug = True:
+            self.logger.debug(msg)
 
     def init(self, init_force=None, direction=None, in_port=0,
              out_port=0):
@@ -117,7 +136,7 @@ class XCaliburD(Syringe):
 
     # Convenience functions
 
-    def extractToWaste(self, in_port, volume_ul, out_port=None, 
+    def extractToWaste(self, in_port, volume_ul, out_port=None,
                        minimal_reset=False):
         """
         Extracts `volume_ul` from `in_port`. If the relative plunger move
@@ -131,7 +150,7 @@ class XCaliburD(Syringe):
         self.waitReady()
         self.changePort(in_port)
         try:
-            return self.movePlungerRel(steps, execute=True, 
+            return self.movePlungerRel(steps, execute=True,
                    minimal_reset=minimal_reset)
         except SyringeError, e:
             # Clear the previous commands from the command chain
@@ -219,7 +238,7 @@ class XCaliburD(Syringe):
                                   the chain being reset was executed, which
                                   will cue slope and microstep state
                                   updating (as well as speed updating).
-            `minimal_reset` (bool) : minimizes additional polling of the 
+            `minimal_reset` (bool) : minimizes additional polling of the
                                      syringe pump and updates state based
                                      on simulated calculations. Should
                                      be extremely reliable but use with
