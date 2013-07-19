@@ -144,15 +144,20 @@ class XCaliburD(Syringe):
         which defaults to `self.waste_port`.
 
         """
-        if not out_port: out_port = self.waste_port
+        self.logDebug('extractToWaste: CALL')
+        out_port = self.waste_port if not out_port
         steps = self._ulToSteps(volume_ul)
         self.cacheSimSpeeds()
         self.waitReady()
         self.changePort(in_port)
         try:
+            self.logDebug('extractToWaste: attempting relative extract '
+                          'steps: {}'.format(steps))
             return self.movePlungerRel(steps, execute=True,
-                   minimal_reset=minimal_reset)
+                                       minimal_reset=minimal_reset)
         except SyringeError, e:
+            self.logDebug('extractToWaste: caught SyringeError [{}]'.format(
+                          e.err_code))
             # Clear the previous commands from the command chain
             self.resetChain()
             self.waitReady()
@@ -176,7 +181,7 @@ class XCaliburD(Syringe):
         beginning of the command chain.
 
         """
-        if not out_port: out_port = self.waste_port
+        out_port = self.waste_port if not out_port
         if speed_code is not None:
             self.setSpeed(speed_code)
         if volume_ul > self.syringe_ul:
@@ -592,19 +597,28 @@ class XCaliburD(Syringe):
         try:
             yield
         except SyringeError, e:
+            self.logDebug('ErrorHandler: caught error code {}'.format(
+                           e.err_code))
             if e.err_code in [7, 9, 10]:
                 last_cmd = self.last_cmd
                 self.resetChain()
                 try:
+                    self.logDebug('ErrorHandler: attempting re-init')
                     self.init()
                 except SyringeError, e:
+                    self.logDebug('ErrorHandler: Error during re-init '
+                                  '[{}]'.format(e.err_code))
                     if e.err_code in [7, 9, 10]:
                         pass
                     else:
                         raise e
                 self.waitReady()
+                self.logDebug('ErrorHandler: resending last command {} '
+                              ''.format(last_cmd))
                 self.sendRcv(last_cmd)
             else:
+                self.logDebug('ErrorHandler: error not in [7, 9, 10], '
+                              're-raising [{}]'.format(e.err_code))
                 self.resetChain()
                 raise e
         except Exception, e:
@@ -629,8 +643,11 @@ class XCaliburD(Syringe):
         if execute:
             cmd_string += 'R'
         self.last_cmd = cmd_string
+        self.logDebug('sendRcv: sending cmd_string: {}'.format(cmd_string))
         with self._syringeErrorHandler():
             parsed_response = super(XCaliburD, self)._sendRcv(cmd_string)
+            self.logDebug('sendRcv: received response {}'.format(
+                          parsed_response))
             data = parsed_response[0]
             return data
 
