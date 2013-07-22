@@ -84,12 +84,13 @@ class XCaliburD(Syringe):
             'cutoff_speed': None,
             'slope': slope
         }
-        self.setMicrostep(on=microstep)
 
         # Handle debug mode init
         self.debug = debug
         if self.debug:
             self.initDebugLogging(debug_log_path)
+
+        self.setMicrostep(on=microstep)
 
         # Command chaining state information
         self.cmd_chain = ''
