@@ -110,8 +110,8 @@ class XCaliburD(Syringe):
         hdlr = logging.FileHandler(fp)
         formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
         hdlr.setFormatter(formatter)
-        logger.addHandler(hdlr)
-        logger.setLevel(logging.DEBUG)
+        self.logger.addHandler(hdlr)
+        self.logger.setLevel(logging.DEBUG)
 
     def logDebug(self, msg):
         if self.debug == True:
