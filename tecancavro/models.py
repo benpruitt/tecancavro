@@ -606,14 +606,14 @@ class XCaliburD(Syringe):
     def _syringeErrorHandler(self):
         """
         Context manager to handle `SyringeError` based on error code. Right
-        now this just handles "Device Not Initialized" errors (code 7) by
-        initializing the pump and then re-running the previous command.
+        now this just handles error codes 7, 9, and 10 by initializing the
+        pump and then re-running the previous command.
         """
         try:
             yield
         except SyringeError, e:
             self.logDebug('ErrorHandler: caught error code {}'.format(
-                           e.err_code))
+                          e.err_code))
             if e.err_code in [7, 9, 10]:
                 last_cmd = self.last_cmd
                 self.resetChain()
