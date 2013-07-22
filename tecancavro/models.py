@@ -373,7 +373,7 @@ class XCaliburD(Syringe):
             else:
                 from_port = 1
         delta = to_port - from_port
-        diff = -delta if abs(diff) >= 7 else delta
+        diff = -delta if abs(delta) >= 7 else delta
         direction = 'CCW' if diff < 0 else 'CW'
         cmd_string = '{0}{1}'.format(self.__class__.DIR_DICT[direction][0],
                                      to_port)
