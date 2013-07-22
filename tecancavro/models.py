@@ -113,7 +113,7 @@ class XCaliburD(Syringe):
         logger.setLevel(logging.DEBUG)
 
     def logDebug(self, msg):
-        if self.debug = True:
+        if self.debug == True:
             self.logger.debug(msg)
 
     def init(self, init_force=None, direction=None, in_port=0,
