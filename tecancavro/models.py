@@ -137,40 +137,54 @@ class XCaliburD(Syringe):
     # Convenience functions
 
     def extractToWaste(self, in_port, volume_ul, out_port=None,
-                       minimal_reset=False):
+                       speed_code=None, minimal_reset=False):
         """
         Extracts `volume_ul` from `in_port`. If the relative plunger move
         exceeds the encoder range, the syringe will dispense to `out_port`,
         which defaults to `self.waste_port`.
 
         """
-        self.logDebug('extractToWaste: CALL')
-        out_port = self.waste_port if not out_port
-        steps = self._ulToSteps(volume_ul)
+        self.logDebug('extractToWaste: called')
+        if out_port is None:
+            out_port = self.waste_port
+        if speed_code is not None:
+            self.setSpeed(speed_code)
         self.cacheSimSpeeds()
-        self.waitReady()
-        self.changePort(in_port)
-        try:
-            self.logDebug('extractToWaste: attempting relative extract '
-                          'steps: {}'.format(steps))
-            return self.movePlungerRel(steps, execute=True,
-                                       minimal_reset=minimal_reset)
-        except SyringeError, e:
-            self.logDebug('extractToWaste: caught SyringeError [{}]'.format(
-                          e.err_code))
-            # Clear the previous commands from the command chain
-            self.resetChain()
-            self.waitReady()
-            self.changePort(out_port, from_port=in_port)
-            self.setSpeed(0)
-            self.movePlungerAbs(0)
-            self.changePort(in_port, from_port=out_port)
-            self.restoreSimSpeeds()
-            #Delay execution 200 ms to stop oscillations
-            self.delayExec(200)
-            self.movePlungerRel(steps)
-            self.changePort(out_port, from_port=in_port)
-            return self.executeChain(minimal_reset=minimal_reset)
+        steps = self._ulToSteps(volume_ul)
+        extracted = False
+        retry = False
+        while not extracted:
+            try:
+                # If the move is calculated to execeed 3000 encoder counts,
+                # dispense to waste and then make relative plunger extract
+                if (self.sim_state['plunger_pos'] + steps) > 3000 or retry:
+                    self.logDebug('extractToWaste: move would exceed 3000 '
+                                  'dumping to out port [{}]'.format(out_port))
+                    self.changePort(out_port, from_port=in_port)
+                    self.setSpeed(0)
+                    self.movePlungerAbs(0)
+                    self.changePort(in_port, from_port=out_port)
+                    self.restoreSimSpeeds()
+                # Make relative plunger extract
+                self.changePort(in_port)
+                self.logDebug('extractToWaste: attempting relative extract '
+                              '[steps: {}]'.format(steps))
+                # Delay execution 200 ms to stop oscillations
+                self.delayExec(200)
+                exec_time = self.movePlungerRel(steps, execute=True,
+                                                minimal_reset=minimal_reset)
+                extracted = True
+            except SyringeError, e:
+                if e.err_code in [2, 3, 4]:
+                    self.logDebug('extractToWaste: caught SyringeError [{}], '
+                                  'retrying.')
+                    retry = True
+                    self.resetChain()
+                    self.waitReady()
+                    continue
+                else:
+                    raise
+        return exec_time
 
     def primePort(self, in_port, volume_ul, speed_code=None,
                   out_port=None):
@@ -181,7 +195,8 @@ class XCaliburD(Syringe):
         beginning of the command chain.
 
         """
-        out_port = self.waste_port if not out_port
+        if out_port is None:
+            out_port = self.waste_port
         if speed_code is not None:
             self.setSpeed(speed_code)
         if volume_ul > self.syringe_ul:
@@ -356,10 +371,9 @@ class XCaliburD(Syringe):
                 from_port = self.sim_state['port']
             else:
                 from_port = 1
-        diff = to_port - from_port
-        if abs(diff) >= 7: diff = -diff
-        if diff < 0: direction = 'CCW'
-        else: direction = 'CW'
+        delta = to_port - from_port
+        diff = -delta if abs(diff) >= 7 else delta
+        direction = 'CCW' if diff < 0 else 'CW'
         cmd_string = '{0}{1}'.format(self.__class__.DIR_DICT[direction][0],
                                      to_port)
         self.sim_state['port'] = to_port
