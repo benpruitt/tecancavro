@@ -67,6 +67,13 @@ class XCaliburD(Syringe):
                 1 - half plunger force and default speed
                 2 - one third plunger force and default speed
                 10-40 - full force and speed code X
+            `debug` (bool) : turns on debug file, which logs extensive debug
+                             output to 'xcaliburd_debug.log' at
+                             `debug_log_path`
+                [default] - False
+            `debug_log_path` : path to debug log file - only relevant if
+                               `debug` == True.
+                [default] - '' (cwd)
 
         """
         super(XCaliburD, self).__init__(com_link)
@@ -104,7 +111,13 @@ class XCaliburD(Syringe):
         self.getCurPort()
         self.updateSimState()
 
+    #########################################################################
+    # Debug functions                                                       #
+    #########################################################################
+
     def initDebugLogging(self, debug_log_path):
+        """ Initialize logger and log file handler """
+
         self.logger = logging.getLogger('XCaliburD')
         fp = debug_log_path.rstrip('/') + '/xcaliburd_debug.log'
         hdlr = logging.FileHandler(fp)
@@ -113,21 +126,36 @@ class XCaliburD(Syringe):
         self.logger.addHandler(hdlr)
         self.logger.setLevel(logging.DEBUG)
 
+    def logCall(self, f_name, f_locals):
+        """ Logs function params at call """
+
+        if self.debug:
+            self.logger.debug('-> {}: {}'.format(f_name, f_locals))
+
     def logDebug(self, msg):
-        if self.debug == True:
+        """ Handles debug logging if self.debug == True """
+
+        if self.debug:
             self.logger.debug(msg)
 
-    def init(self, init_force=None, direction=None, in_port=0,
-             out_port=0):
+    #########################################################################
+    # Pump initialization                                                   #
+    #########################################################################
+
+    def init(self, init_force=None, direction=None, in_port=None,
+             out_port=None):
         """
         Initialize pump. Uses instance `self.init_force` and `self.direction`
-        if not provided.
+        if not provided. Blocks until initialization is complete.
 
         """
-        if not init_force: init_force = self.init_force
-        if not direction: direction = self.direction
-        if self.waste_port and out_port == 0:
-            out_port = self.waste_port
+        self.logCall('init', locals())
+
+        init_force = init_force if init_force is not None else self.init_force
+        direction = direction if direction is not None else self.direction
+        out_port = out_port if out_port is not None else self.waste_port
+        in_port = in_port if in_port is not None else 0
+
         cmd_string = '{0}{1},{2},{3}'.format(
                      self.__class__.DIR_DICT[direction][1],
                      init_force, in_port, out_port)
@@ -135,7 +163,9 @@ class XCaliburD(Syringe):
         self.waitReady()
         return 0  # 0 seconds left to wait
 
-    # Convenience functions
+    #########################################################################
+    # Convenience functions                                                 #
+    #########################################################################
 
     def extractToWaste(self, in_port, volume_ul, out_port=None,
                        speed_code=None, minimal_reset=False):
@@ -145,15 +175,17 @@ class XCaliburD(Syringe):
         which defaults to `self.waste_port`.
 
         """
-        self.logDebug('extractToWaste: called')
-        if out_port is None:
-            out_port = self.waste_port
+        self.logCall('extractToWaste', locals())
+
+        out_port = out_port if out_port is not None else out_port
         if speed_code is not None:
             self.setSpeed(speed_code)
         self.cacheSimSpeeds()
         steps = self._ulToSteps(volume_ul)
-        extracted = False
+
         retry = False
+        extracted = False
+
         while not extracted:
             try:
                 # If the move is calculated to execeed 3000 encoder counts,
@@ -187,15 +219,17 @@ class XCaliburD(Syringe):
                     raise
         return exec_time
 
-    def primePort(self, in_port, volume_ul, speed_code=None,
-                  out_port=None):
+    def primePort(self, in_port, volume_ul, speed_code=None, out_port=None,
+                  split_command=False):
         """
         Primes the line on `in_port` with `volume_ul`, which can
         exceed the maximum syringe volume. If `speed_code` is
         provided, the syringe speed will be appended to the
-        beginning of the command chain.
+        beginning of the command chain. Blocks until priming is complete.
 
         """
+        self.logCall('primePort', locals())
+
         if out_port is None:
             out_port = self.waste_port
         if speed_code is not None:
@@ -229,7 +263,9 @@ class XCaliburD(Syringe):
             delay = self.executeChain()
             self.waitReady(delay)
 
-    # Chain functions
+    #########################################################################
+    # Command chain functions                                               #
+    #########################################################################
 
     def executeChain(self, minimal_reset=False):
         """
@@ -237,6 +273,8 @@ class XCaliburD(Syringe):
         Returns the estimated execution time (`self.exec_time`) for the chain.
 
         """
+        self.logCall('executeChain', locals())
+
         # Compensaate for reset time (tic/toc) prior to returning wait_time
         tic = time.time()
         self.sendRcv(self.cmd_chain, execute=True)
@@ -265,6 +303,8 @@ class XCaliburD(Syringe):
                                      be extremely reliable but use with
                                      caution.
         """
+        self.logCall('resetChain', locals())
+
         self.cmd_chain = ''
         self.exec_time = 0
         if (on_execute and self.sim_speed_change):
@@ -285,6 +325,8 @@ class XCaliburD(Syringe):
         simulation state dictionary (`self.sim_state`)
 
         """
+        self.logCall('updateSimState', locals())
+
         self.sim_state = {k: v for k,v in self.state.iteritems()}
 
     def cacheSimSpeeds(self):
@@ -294,12 +336,16 @@ class XCaliburD(Syringe):
         need to be temporarily changed and then reverted
 
         """
+        self.logCall('cacheSimSpeeds', locals())
+
         self._cached_start_speed = self.sim_state['start_speed']
         self._cached_top_speed = self.sim_state['top_speed']
         self._cached_cutoff_speed = self.sim_state['cutoff_speed']
 
     def restoreSimSpeeds(self):
         """ Restores simulation speeds cached by `self.cacheSimSpeeds` """
+        self.logCall('restoreSimSpeeds', locals())
+
         self.sim_state['start_speed'] = self._cached_start_speed
         self.sim_state['top_speed'] = self._cached_top_speed
         self.sim_state['cutoff_speed'] = self._cached_cutoff_speed
@@ -323,17 +369,21 @@ class XCaliburD(Syringe):
             if 'minimal_reset' in kwargs:
                 minimal_reset = kwargs.pop('minimal_reset')
             else:
-                minimal_reset=False
+                minimal_reset = False
             func(self, *args, **kwargs)
             if execute:
                 return self.executeChain(minimal_reset=minimal_reset)
         return addAndExec
 
-    # Chainable convenience functions
+    #########################################################################
+    # Chainable high level functions                                        #
+    #########################################################################
 
     @execWrap
     def extract(self, from_port, volume_ul):
         """ Extract `volume_ul` from `from_port` """
+        self.logCall('extract', locals())
+
         steps = self._ulToSteps(volume_ul)
         self.changePort(from_port)
         self.movePlungerRel(steps)
@@ -341,11 +391,15 @@ class XCaliburD(Syringe):
     @execWrap
     def dispense(self, to_port, volume_ul):
         """ Dispense `volume_ul` from `to_port` """
+        self.logCall('dispense', locals())
+
         steps = self._ulToSteps(volume_ul)
         self.changePort(to_port)
         self.movePlungerRel(-steps)
 
-    # Chainable low-level functions
+    #########################################################################
+    # Chainable low level functions                                         #
+    #########################################################################
 
     @execWrap
     def changePort(self, to_port, from_port=None, direction='CW'):
@@ -363,6 +417,8 @@ class XCaliburD(Syringe):
                 'CCW' - counterclockwise
 
         """
+        self.logCall('changePort', locals())
+
         if not 0 < to_port <= self.num_ports:
             raise(ValueError('`in_port` [{0}] must be between 1 and '
                              '`num_ports` [{1}]'.format(to_port,
@@ -392,6 +448,8 @@ class XCaliburD(Syringe):
                 (0-3000) in standard mode
 
         """
+        self.logCall('movePlungerAbs', locals())
+
         if self.sim_state['microstep']:
             if not 0 <= abs_position <= 24000:
                 raise(ValueError('`abs_position` must be between 0 and 40000'
@@ -422,6 +480,8 @@ class XCaliburD(Syringe):
                 if rel_position > 0 : plunger moves down (relative extract)
 
         """
+        self.logCall('movePlungerRel', locals())
+
         if rel_position < 0:
             cmd_string = 'D{0}'.format(abs(rel_position))
         else:
@@ -430,9 +490,15 @@ class XCaliburD(Syringe):
         self.cmd_chain += cmd_string
         self.exec_time += self._calcPlungerMoveTime(abs(rel_position))
 
-    # Chainable set commands
+    #########################################################################
+    # Command set commands                                                  #
+    #########################################################################
+
     @execWrap
     def setSpeed(self, speed_code):
+        """ Set top speed by `speed_code` (see OEM docs) """
+        self.logCall('setSpeed', locals())
+
         if not 0 <= speed_code <= 40:
             raise(ValueError('`speed_code` [{0}] must be between 0 and 40'
                              ''.format(speed_code)))
@@ -444,6 +510,8 @@ class XCaliburD(Syringe):
     @execWrap
     def setStartSpeed(self, pulses_per_sec):
         """ Set start speed in `pulses_per_sec` [50-1000] """
+        self.logCall('setStartSpeed', locals())
+
         cmd_string = 'v{0}'.format(pulses_per_sec)
         self.sim_speed_change = True
         self.cmd_chain += cmd_string
@@ -451,6 +519,8 @@ class XCaliburD(Syringe):
     @execWrap
     def setTopSpeed(self, pulses_per_sec):
         """ Set top speed in `pulses_per_sec` [5-6000] """
+        self.logCall('setTopSpeed', locals())
+
         cmd_string = 'V{0}'.format(pulses_per_sec)
         self.sim_speed_change = True
         self.cmd_chain += cmd_string
@@ -458,12 +528,16 @@ class XCaliburD(Syringe):
     @execWrap
     def setCutoffSpeed(self, pulses_per_sec):
         """ Set cutoff speed in `pulses_per_sec` [50-2700] """
+        self.logCall('setCutoffSpeed', locals())
+
         cmd_string = 'c{0}'.format(pulses_per_sec)
         self.sim_speed_change = True
         self.cmd_chain += cmd_string
 
     @execWrap
     def setSlope(self, slope_code, chain=False):
+        self.logCall('setSlope', locals())
+
         if not 1 <= slope_code <= 20:
             raise(ValueError('`slope_code` [{0}] must be between 1 and 20'
                              ''.format(slope_code)))
@@ -475,6 +549,8 @@ class XCaliburD(Syringe):
 
     @execWrap
     def repeatCmdSeq(self, num_repeats):
+        self.logCall('repeatCmdSeq', locals())
+
         if not 0 < num_repeats < 30000:
             raise(ValueError('`num_repeats` [{0}] must be between 0 and 30000'
                              ''.format(num_repeats)))
@@ -484,12 +560,16 @@ class XCaliburD(Syringe):
 
     @execWrap
     def markRepeatStart(self):
+        self.logCall('markRepeatStart', locals())
+
         cmd_string = 'g'
         self.cmd_chain += cmd_string
 
     @execWrap
     def delayExec(self, delay_ms):
         """ Delays command execution for `delay` milliseconds """
+        self.logCall('delayExec', locals())
+
         if not 0 < delay_ms < 30000:
             raise(ValueError('`delay` [{0}] must be between 0 and 40000 ms'
                              ''.format(delay_ms)))
@@ -510,21 +590,29 @@ class XCaliburD(Syringe):
                 2 - input 2 (J4 pin 8)
 
         """
+        self.logCall('haltExec', locals())
+
         if not 0 <= input_pin < 2:
             raise(ValueError('`input_pin` [{0}] must be between 0 and 2'
                              ''.format(input_sig)))
         cmd_string = 'H{0}'.format(input_sig)
         return self.sendRcv(cmd_string)
 
-    # Report commands
+    #########################################################################
+    # Report commands (cannot be chained)                                   #
+    #########################################################################
 
     def updateSpeeds(self):
+        self.logCall('updateSpeeds', locals())
+
         self.getStartSpeed()
         self.getTopSpeed()
         self.getCutoffSpeed()
 
     def getPlungerPos(self):
         """ Returns the absolute plunger position as an int (0-3000) """
+        self.logCall('getPlungerPos', locals())
+
         cmd_string = '?'
         data = self.sendRcv(cmd_string)
         self.state['plunger_pos'] = int(data)
@@ -532,6 +620,8 @@ class XCaliburD(Syringe):
 
     def getStartSpeed(self):
         """ Returns the start speed as an int (in pulses/sec) """
+        self.logCall('getStartSpeed', locals())
+
         cmd_string = '?1'
         data = self.sendRcv(cmd_string)
         self.state['start_speed'] = int(data)
@@ -539,6 +629,8 @@ class XCaliburD(Syringe):
 
     def getTopSpeed(self):
         """ Returns the top speed as an int (in pulses/sec) """
+        self.logCall('getTopSpeed', locals())
+
         cmd_string = '?2'
         data = self.sendRcv(cmd_string)
         self.state['top_speed'] = int(data)
@@ -546,6 +638,8 @@ class XCaliburD(Syringe):
 
     def getCutoffSpeed(self):
         """ Returns the cutoff speed as an int (in pulses/sec) """
+        self.logCall('getCutoffSpeed', locals())
+
         cmd_string = '?3'
         data = self.sendRcv(cmd_string)
         self.state['cutoff_speed'] = int(data)
@@ -553,12 +647,16 @@ class XCaliburD(Syringe):
 
     def getEncoderPos(self):
         """ Returns the current encoder count on the plunger axis """
+        self.logCall('getEncoderPos', locals())
+
         cmd_string = '?4'
         data = self.sendRcv(cmd_string)
         return int(data)
 
     def getCurPort(self):
         """ Returns the current port position (1-num_ports) """
+        self.logCall('getCurPort', locals())
+
         cmd_string = '?6'
         data = self.sendRcv(cmd_string)
         with self._syringeErrorHandler():
@@ -571,25 +669,37 @@ class XCaliburD(Syringe):
 
     def getBufferStatus(self):
         """ Returns the current cmd buffer status (0=empty, 1=non-empty) """
+        self.logCall('getBufferStatus', locals())
+
         cmd_string = '?10'
         data = self.sendRcv(cmd_string)
         return int(data)
 
-    # Config commands
+    #########################################################################
+    # Config commands                                                       #
+    #########################################################################
 
     def setMicrostep(self, on=False):
         """ Turns microstep mode on or off """
+        self.logCall('setMicrostep', locals())
+
         cmd_string = 'N{0}'.format(int(on))
         self.sendRcv(cmd_string, execute=True)
         self.microstep = on
 
-    # Control commands
+    #########################################################################
+    # Control commands                                                      #
+    #########################################################################
 
     def terminateCmd(self):
+        self.logCall('terminateCommand', locals())
+
         cmd_string = 'T'
         return self.sendRcv(cmd_string, execute=True)
 
-    # Communication handlers and special functions
+    #########################################################################
+    # Communication handlers and special functions                          #
+    #########################################################################
 
     def waitReady(self, timeout=10, polling_interval=0.3, delay=None):
         """
@@ -599,6 +709,8 @@ class XCaliburD(Syringe):
         seconds prior to beginning polling.
 
         """
+        self.logCall('waitReady', locals())
+
         self._waitReady(timeout=timeout, polling_interval=polling_interval,
                         delay=delay)
 
@@ -608,6 +720,7 @@ class XCaliburD(Syringe):
         Context manager to handle `SyringeError` based on error code. Right
         now this just handles error codes 7, 9, and 10 by initializing the
         pump and then re-running the previous command.
+
         """
         try:
             yield
@@ -653,7 +766,9 @@ class XCaliburD(Syringe):
                         `cmd_string` prior to sending
         Returns:
             `parsed_reponse` (tuple) : parsed pump response tuple
+
         """
+        self.logCall('sendRcv', locals())
 
         if execute:
             cmd_string += 'R'
@@ -661,7 +776,7 @@ class XCaliburD(Syringe):
         self.logDebug('sendRcv: sending cmd_string: {}'.format(cmd_string))
         with self._syringeErrorHandler():
             parsed_response = super(XCaliburD, self)._sendRcv(cmd_string)
-            self.logDebug('sendRcv: received response {}'.format(
+            self.logDebug('sendRcv: received response: {}'.format(
                           parsed_response))
             data = parsed_response[0]
             return data
