@@ -177,7 +177,7 @@ class XCaliburD(Syringe):
         """
         self.logCall('extractToWaste', locals())
 
-        out_port = out_port if out_port is not None else out_port
+        out_port = out_port if out_port is not None else self.waste_port
         if speed_code is not None:
             self.setSpeed(speed_code)
         self.cacheSimSpeeds()
@@ -420,7 +420,7 @@ class XCaliburD(Syringe):
         self.logCall('changePort', locals())
 
         if not 0 < to_port <= self.num_ports:
-            raise(ValueError('`in_port` [{0}] must be between 1 and '
+            raise(ValueError('`to_port` [{0}] must be between 1 and '
                              '`num_ports` [{1}]'.format(to_port,
                              self.num_ports)))
         if not from_port:
