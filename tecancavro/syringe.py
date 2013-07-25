@@ -74,6 +74,7 @@ class Syringe(object):
 
         Defaults to the error code dictionary (`ERROR_DICT`) defined in the
         `Syringe` class; however, this can be overridden in a subclass.
+        
         """
         error_code = int(status_byte[4:8], 2)
         ready = int(status_byte[2])
@@ -95,6 +96,7 @@ class Syringe(object):
         """
         Checks to see if the syringe is ready to accept a new command (i.e.
         is not busy). Returns `True` if it is ready, or `False` if it is not.
+        
         """
         if self._ready:
             return True
@@ -114,6 +116,7 @@ class Syringe(object):
         Kwargs:
             `polling_interval` (int): frequency of polling in seconds
             `timeout` (int): max wait time in seconds
+        
         """
         if delay:
             sleep(delay)

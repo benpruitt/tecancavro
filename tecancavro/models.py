@@ -591,17 +591,6 @@ class XCaliburD(Syringe):
 
     # Communication handlers and special functions
 
-    def waitReady(self, timeout=10, polling_interval=0.3, delay=None):
-        """
-        Waits a maximum of `timeout` seconds for the syringe to be
-        ready to accept another set command, polling every `polling_interval`
-        seconds. If a `delay` is provided, the function will sleep `delay`
-        seconds prior to beginning polling.
-
-        """
-        self._waitReady(timeout=timeout, polling_interval=polling_interval,
-                        delay=delay)
-
     @contextmanager
     def _syringeErrorHandler(self):
         """
@@ -627,7 +616,7 @@ class XCaliburD(Syringe):
                         pass
                     else:
                         raise e
-                self.waitReady()
+                self._waitReady()
                 self.logDebug('ErrorHandler: resending last command {} '
                               ''.format(last_cmd))
                 self.sendRcv(last_cmd)
@@ -639,6 +628,18 @@ class XCaliburD(Syringe):
         except Exception, e:
             self.resetChain()
             raise e
+
+    def waitReady(self, timeout=10, polling_interval=0.3, delay=None):
+        """
+        Waits a maximum of `timeout` seconds for the syringe to be
+        ready to accept another set command, polling every `polling_interval`
+        seconds. If a `delay` is provided, the function will sleep `delay`
+        seconds prior to beginning polling.
+
+        """
+        with self._syringeErrorHandler():
+            self._waitReady(timeout=timeout, polling_interval=polling_interval,
+                            delay=delay)
 
     def sendRcv(self, cmd_string, execute=False):
         """
