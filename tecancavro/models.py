@@ -168,11 +168,14 @@ class XCaliburD(Syringe):
     #########################################################################
 
     def extractToWaste(self, in_port, volume_ul, out_port=None,
-                       speed_code=None, minimal_reset=False):
+                       speed_code=None, minimal_reset=False, flush=False):
         """
         Extracts `volume_ul` from `in_port`. If the relative plunger move
         exceeds the encoder range, the syringe will dispense to `out_port`,
-        which defaults to `self.waste_port`.
+        which defaults to `self.waste_port`. If `minimal_reset` is `True`, 
+        state updates upon execution will be based on simulations rather
+        than polling. If `flush` is `True`, the contents of the syringe 
+        will be flushed to waste following the extraction.
 
         """
         self.logCall('extractToWaste', locals())
@@ -204,8 +207,10 @@ class XCaliburD(Syringe):
                               '[steps: {}]'.format(steps))
                 # Delay execution 200 ms to stop oscillations
                 self.delayExec(200)
-                exec_time = self.movePlungerRel(steps, execute=True,
-                                                minimal_reset=minimal_reset)
+                self.movePlungerRel(steps)
+                if flush:
+                    self.dispenseToWaste()
+                exec_time = self.executeChain(minimal_reset=True)
                 extracted = True
             except SyringeError, e:
                 if e.err_code in [2, 3, 4]:
@@ -378,6 +383,20 @@ class XCaliburD(Syringe):
     #########################################################################
     # Chainable high level functions                                        #
     #########################################################################
+
+    @execWrap
+    def dispenseToWaste(self, retain_port=True):
+        """ 
+        Dispense current syringe contents to waste. If `retain_port` is true,
+        the syringe will be returned to the original port after the dump.
+        """
+        self.logCall('dispenseToWaste', locals())
+        if retain_port:
+            orig_port = self.sim_state['port']
+        self.changePort(self.waste_port)
+        self.movePlungerAbs(0)
+        if retain_port
+            self.changePort(orig_port)
 
     @execWrap
     def extract(self, from_port, volume_ul):
