@@ -395,7 +395,7 @@ class XCaliburD(Syringe):
             orig_port = self.sim_state['port']
         self.changePort(self.waste_port)
         self.movePlungerAbs(0)
-        if retain_port
+        if retain_port:
             self.changePort(orig_port)
 
     @execWrap
