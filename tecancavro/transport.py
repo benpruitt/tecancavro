@@ -16,7 +16,11 @@ which sends a command string (`cmd`) and returns a dictionary containing the
 import serial
 import uuid
 import time
-import urllib2
+
+try:
+    import urllib.request as urllib2
+except ImportError:
+    import urllib2
 
 try:
     import simplejson as json
