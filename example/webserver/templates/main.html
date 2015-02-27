@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <title>
+    Test Tecan Cavro Syringe - {% block title %}{% endblock %}
+  </title>
+
+  <!-- Third-party javascripts -->
+  <script type="text/javascript" src="{{ url_for('static', filename='vendor/jquery/jquery-2.1.3.min.js') }}"></script>
+  <script type="text/javascript" src="{{ url_for('static', filename='vendor/bootstrap/js/bootstrap.min.js') }}"></script>
+
+  {% block headjs %}{% endblock %}
+
+  <!-- css -->
+  <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='vendor/bootstrap/css/bootstrap.min.css') }}">
+  {% block headcss %}{% endblock %}
+
+<div class="row">
+    <div class="col-md-3">Serial Port: 
+        <select id="port-name">
+            {% for i in params.devices %}
+            <option value="{{i[0]}}">{{i[0]}}</option>
+            {% endfor %}
+        </select>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-3">Valve Port: 
+        <select id="valve-number">
+            {% for i in params.valves %}
+            <option value="{{i}}">{{i}}</option>
+            {% endfor %}
+        </select>
+    </div>
+</div>
+
+<form class="form-inline" id="pull-form">
+  <div class="form-group">
+    <button id="pull-button" type="submit" class="btn btn-primary">Pull: </button>
+    <label class="sr-only" for="exampleInputAmount">Volume (in μL)</label>
+    <div class="input-group">
+      <input type="number" min="0" max="1000" class="form-control" id="pull_amount" name="pull_volume" placeholder="Amount">
+      <div class="input-group-addon">μL</div>
+    </div>
+  </div>
+</form>
+
+<form class="form-inline">
+  <div class="form-group">
+    <button id="push-button" type="submit" class="btn btn-primary">Push: </button>
+    <label class="sr-only" for="exampleInputAmount">Volume (in μL)</label>
+    <div class="input-group">
+      <input type="number" min="0" max="1000" class="form-control" id="push_amount" name="push_volume" placeholder="Amount">
+      <div class="input-group-addon">μL</div>
+    </div>
+  </div>
+</form>
+
+<div id="debugfield"></div>
+
+<script type="text/javascript">
+$(document).ready(function() {
+
+$( "#pull-button" ).click(function( event ) {
+    console.log("poop", $( "#pull_amount").val());
+    var val = $( "#pull_amount").val();
+    var serport = $( "#port-name").val();
+    if ( val > 0 && val < 1000) {
+        $( "#debugfield" ).text( "Validated Pull..." ).show();
+        // event.preventDefault();
+        $.get('pull',
+              {'value': val,
+                'serial_port': serport
+                },
+              function(){console.log("hooray pull!");}
+            );
+    } else {
+        $( "#debugfield" ).text( "Not valid Pull!" ).show().fadeOut( 1000 );
+    }
+    event.preventDefault();
+});
+
+$( "#push-button" ).click(function( event ) {
+    console.log("poop", $( "#push_amount").val());
+    var val = $( "#push_amount").val();
+    var serport = $( "#port-name").val();
+    if ( val > 0 && val < 1000) {
+        $( "#debugfield" ).text( "Validated Push..." ).show();
+        // event.preventDefault();
+        $.get('push',
+              {'value': val,
+                'serial_port': serport
+                },
+              function(){console.log("hooray push!");}
+            );
+    } else {
+        $( "#debugfield" ).text( "Not valid Push!" ).show().fadeOut( 1000 );
+    }
+    event.preventDefault();
+});
+
+});
+</script>
+
+</head>
+<body>
