@@ -11,9 +11,17 @@ app.config.from_object(__name__)
 app.jinja_env.trim_blocks = True
 app.jinja_env.lstrip_blocks = True
 
-from tecancavro.models import XCaliburD
-
-from tecancavro.transport import TecanAPISerial, TecanAPINode
+try:
+    from tecancavro.models import XCaliburD
+    from tecancavro.transport import TecanAPISerial, TecanAPINode
+except ImportError:  # Support direct import from package
+    import sys
+    import os
+    dirn = os.path.dirname
+    LOCAL_DIR = os.path.dirname(os.path.realpath(__file__))
+    sys.path.append(dirn(dirn(LOCAL_DIR)))
+    from tecancavro.models import XCaliburD
+    from tecancavro.transport import TecanAPISerial, TecanAPINode
 
 def findSerialPumps():
     return TecanAPISerial.findSerialPumps()
