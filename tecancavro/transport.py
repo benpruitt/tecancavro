@@ -38,21 +38,6 @@ except:
 
 from .tecanapi import TecanAPI, TecanAPITimeout
 
-def to_bytes(seq):
-    """convert a sequence to a bytes type"""
-    if isinstance(seq, bytes):
-        return seq
-    elif isinstance(seq, bytearray):
-        return bytes(seq)
-    elif isinstance(seq, memoryview):
-        return seq.tobytes()
-    else:
-        b = bytearray()
-        for item in seq:
-            b.append(item)  # this one handles int and str for our emulation and ints for Python 3.x
-        return bytes(b)
-
-
 # From http://stackoverflow.com/questions/12090503/
 #      listing-available-com-ports-with-python
 def listSerialPorts():
