@@ -14,89 +14,91 @@
 
   <!-- css -->
   <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='vendor/bootstrap/css/bootstrap.min.css') }}">
+  <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='main.css') }}">
   {% block headcss %}{% endblock %}
 
-<div class="row">
-    <div class="col-md-3">Serial Port: 
-        <select id="port-name">
-            {% for i in params.devices %}
-            <option value="{{i[0]}}">{{i[0]}}</option>
-            {% endfor %}
-        </select>
-    </div>
-</div>
+<div class="container">
+  <br>
+  <div class="row">
+      <div class="col-md-2">Serial Port:
+          <select id="serial_port">
+              {% for i in params.devices %}
+              <option value="{{i[0]}}">{{i[0]}}</option>
+              {% endfor %}
+          </select>
+      </div>
+      <div class="col-md-2">Valve Port:
+          <select id="port_number">
+              {% for i in params.valves %}
+              <option value="{{i}}">{{i}}</option>
+              {% endfor %}
+          </select>
+      </div>
+  </div>
+  <br>
 
-<div class="row">
-    <div class="col-md-3">Valve Port: 
-        <select id="valve-number">
-            {% for i in params.valves %}
-            <option value="{{i}}">{{i}}</option>
-            {% endfor %}
-        </select>
+  <div class="row">
+    <div class="col-md-4">
+      <div class="input-group">
+        <input type="number" id="extract_volume" name="extract_volume" min="0" max="1000"  class="form-control" placeholder="Extract volume (μL)">
+        <span class="input-group-btn">
+          <button class="btn btn-default" id="extract_btn" type="button">Extract</button>
+        </span>
+      </div>
     </div>
-</div>
-
-<form class="form-inline" id="pull-form">
-  <div class="form-group">
-    <button id="pull-button" type="submit" class="btn btn-primary">Pull: </button>
-    <label class="sr-only" for="exampleInputAmount">Volume (in μL)</label>
-    <div class="input-group">
-      <input type="number" min="0" max="1000" class="form-control" id="pull_amount" name="pull_volume" placeholder="Amount">
-      <div class="input-group-addon">μL</div>
+    <div class="col-md-4">
+      <div class="input-group">
+        <input type="number" id="dispense_volume" name="dispense_volume" min="0" max="1000" class="form-control" placeholder="Extract volume (μL)">
+        <span class="input-group-btn">
+          <button class="btn btn-default" id="dispense_btn" type="button">Dispense</button>
+        </span>
+      </div>
     </div>
   </div>
-</form>
+  <br>
+  <div id="debugfield"></div>
+</div>
 
-<form class="form-inline">
-  <div class="form-group">
-    <button id="push-button" type="submit" class="btn btn-primary">Push: </button>
-    <label class="sr-only" for="exampleInputAmount">Volume (in μL)</label>
-    <div class="input-group">
-      <input type="number" min="0" max="1000" class="form-control" id="push_amount" name="push_volume" placeholder="Amount">
-      <div class="input-group-addon">μL</div>
-    </div>
-  </div>
-</form>
 
-<div id="debugfield"></div>
+
 
 <script type="text/javascript">
 $(document).ready(function() {
 
-$( "#pull-button" ).click(function( event ) {
-    console.log("poop", $( "#pull_amount").val());
-    var val = $( "#pull_amount").val();
-    var serport = $( "#port-name").val();
-    if ( val > 0 && val < 1000) {
-        $( "#debugfield" ).text( "Validated Pull..." ).show();
-        // event.preventDefault();
-        $.get('pull',
-              {'value': val,
-                'serial_port': serport
-                },
-              function(){console.log("hooray pull!");}
+$( "#extract_btn" ).click(function( event ) {
+
+    var volume = $( "#extract_volume").val();
+    var port = $("#port_number").val();
+    var serport = $( "#serial_port").val() || '';
+    if ( volume > 0 && volume < 1000) {
+        $( "#debugfield" ).text( "Valid extract command..." ).show();
+        $.get('extract',
+              {'volume': volume,
+               'port': port,
+               'serial_port': serport
+                }
             );
     } else {
-        $( "#debugfield" ).text( "Not valid Pull!" ).show().fadeOut( 1000 );
+        $( "#debugfield" ).text( "Not valid extract command!" ).show().fadeOut( 1000 );
     }
     event.preventDefault();
 });
 
-$( "#push-button" ).click(function( event ) {
-    console.log("poop", $( "#push_amount").val());
-    var val = $( "#push_amount").val();
-    var serport = $( "#port-name").val();
-    if ( val > 0 && val < 1000) {
-        $( "#debugfield" ).text( "Validated Push..." ).show();
-        // event.preventDefault();
-        $.get('push',
-              {'value': val,
-                'serial_port': serport
-                },
-              function(){console.log("hooray push!");}
+$( "#dispense_btn" ).click(function( event ) {
+
+    var volume = $( "#dispense_volume").val();
+    var port = $("#port_number").val();
+    var serport = $( "#serial_port").val() || '';
+    if ( volume > 0 && volume < 1000) {
+        $( "#debugfield" ).text( "Validated dispense command..." ).show();
+        $.get('dispense',
+              {'volume': volume,
+               'port': port,
+               'serial_port': serport
+                }
             );
     } else {
-        $( "#debugfield" ).text( "Not valid Push!" ).show().fadeOut( 1000 );
+        $( "#debugfield" ).text( "Not valid dispense command!" ).show().fadeOut( 1000 );
     }
     event.preventDefault();
 });

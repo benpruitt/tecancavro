@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 from flask import Flask, render_template, current_app, request
 from flask import json, jsonify, make_response, session, send_from_directory
 from flask import redirect, url_for, escape, make_response
@@ -24,9 +26,9 @@ def getSerialPumps():
     pump_list = findSerialPumps()
     return [(ser_port, XCaliburD(com_link=TecanAPISerial(0,
              ser_port, 9600))) for ser_port, _, _ in pump_list]
-devices = getSerialPumps()
 
-device_dict = {x[0]:x[1] for x in devices}
+devices = getSerialPumps()
+device_dict = dict(devices)
 
 
 ###############################################################################
@@ -53,22 +55,29 @@ def main():
     params['devices'] = devices
     return render_template('main.html', params=params)
 
-@app.route('/pull')
-def pull_call():
+@app.route('/extract')
+def extract_call():
     global device_dict
-    val = request.args['value']
+    volume = int(request.args['volume'])
+    port = int(request.args['port'])
     sp = request.args['serial_port']
-    print("got", val, sp)
+    print("Received extract for: %d ul from port %d on serial port %s" % (volume,
+          port, sp))
+    if len(sp) > 0:
+        device_dict[sp].extract(port, volume)
     # device_dict[sp].doSomething(val)
     return ('', 204)
 
-@app.route('/push')
-def push_call():
+@app.route('/dispense')
+def dispense_call():
     global device_dict
-    val = request.args['value']
+    volume = int(request.args['volume'])
+    port = int(request.args['port'])
     sp = request.args['serial_port']
-    print("got", val, sp)
-    # device_dict[sp].doSomething(val)
+    print("Received dispense for: %d ul from port %d on serial port %s" % (volume,
+          port, sp))
+    if len(sp) > 0:
+        device_dict[sp].dispense(port, volume)
     return ('', 204)
 
 if __name__ == '__main__':
