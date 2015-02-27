@@ -13,9 +13,12 @@ which sends a command string (`cmd`) and returns a dictionary containing the
 
 """
 
-import serial
+import glob
+import sys
 import uuid
 import time
+
+import serial
 
 try:
     import urllib.request as urllib2
@@ -33,7 +36,55 @@ try:
 except:
     from time import sleep
 
-from tecanapi import TecanAPI, TecanAPITimeout
+from .tecanapi import TecanAPI, TecanAPITimeout
+
+def to_bytes(seq):
+    """convert a sequence to a bytes type"""
+    if isinstance(seq, bytes):
+        return seq
+    elif isinstance(seq, bytearray):
+        return bytes(seq)
+    elif isinstance(seq, memoryview):
+        return seq.tobytes()
+    else:
+        b = bytearray()
+        for item in seq:
+            b.append(item)  # this one handles int and str for our emulation and ints for Python 3.x
+        return bytes(b)
+
+
+# From http://stackoverflow.com/questions/12090503/
+#      listing-available-com-ports-with-python
+def listSerialPorts():
+    """Lists serial ports
+
+    :raises EnvironmentError:
+        On unsupported or unknown platforms
+    :returns:
+        A list of available serial ports
+    """
+    if sys.platform.startswith('win'):
+        ports = ['COM' + str(i + 1) for i in range(256)]
+
+    elif sys.platform.startswith('linux') or sys.platform.startswith('cygwin'):
+        # this is to exclude your current terminal "/dev/tty"
+        ports = glob.glob('/dev/tty[A-Za-z]*')
+
+    elif sys.platform.startswith('darwin'):
+        ports = glob.glob('/dev/tty.*')
+
+    else:
+        raise EnvironmentError('Unsupported platform')
+
+    result = []
+    for port in ports:
+        try:
+            s = serial.Serial(port)
+            s.close()
+            result.append(port)
+        except (OSError, serial.SerialException):
+            pass
+    return result
 
 
 class TecanAPISerial(TecanAPI):
@@ -45,6 +96,30 @@ class TecanAPISerial(TecanAPI):
     """
 
     ser_mapping = {}
+
+    @classmethod
+    def findSerialPumps(cls, tecan_addrs=[0], ser_baud=9600, ser_timeout=0.2,
+                        max_attempts=2):
+        ''' Find any enumerated syringe pumps on the local com / serial ports.
+
+        Returns list of (<ser_port>, <pump_config>, <pump_firmware_version>)
+        tuples.
+        '''
+        found_devices = []
+        for port_path in listSerialPorts():
+            for addr in tecan_addrs:
+                try:
+                    p = cls(addr, port_path, ser_baud,
+                            ser_timeout, max_attempts)
+                    config = p.sendRcv('?76')['data']
+                    fw_version = p.sendRcv('&')['data']
+                    found_devices.append((port_path, config, fw_version))
+                except OSError as e:
+                    if e.errno != 16:  # Resource busy
+                        raise
+                except TecanAPITimeout:
+                    pass
+        return found_devices
 
     def __init__(self, tecan_addr, ser_port, ser_baud, ser_timeout=0.1,
                  max_attempts=5):
@@ -84,8 +159,12 @@ class TecanAPISerial(TecanAPI):
         self._ser.write(frame)
 
     def _receiveFrame(self):
-        raw_data = self._ser.readline()
-        return self.parseFrame(raw_data.rstrip('\n'))
+        raw_data = b''
+        raw_byte = self._ser.read()
+        while raw_byte != b'':
+            raw_data += raw_byte
+            raw_byte = self._ser.read()
+        return self.parseFrame(raw_data)
 
     def _registerSer(self):
         """
@@ -98,7 +177,7 @@ class TecanAPISerial(TecanAPI):
         port = self.ser_port
         if self.ser_port not in reg:
             reg[port] = {}
-            reg[port]['info'] = {k: v for k, v in self.ser_info.iteritems()}
+            reg[port]['info'] = {k: v for k, v in self.ser_info.items()}
             reg[port]['_ser'] = serial.Serial(port=port,
                                     baudrate=reg[port]['info']['baud'],
                                     timeout=reg[port]['info']['timeout'])
@@ -118,12 +197,15 @@ class TecanAPISerial(TecanAPI):
         Cleanup serial port registration on delete
         """
         port_reg = TecanAPISerial.ser_mapping[self.ser_port]
-        dev_list = port_reg['_devices']
-        ind = dev_list.index(self.id_)
-        del dev_list[ind]
-        if len(dev_list) == 0:
-            port_reg['_ser'].close()
-            del port_reg, TecanAPISerial.ser_mapping[self.ser_port]
+        try:
+            dev_list = port_reg['_devices']
+            ind = dev_list.index(self.id_)
+            del dev_list[ind]
+            if len(dev_list) == 0:
+                port_reg['_ser'].close()
+                del port_reg, TecanAPISerial.ser_mapping[self.ser_port]
+        except KeyError:
+            pass
 
 
 class TecanAPINode(TecanAPI):

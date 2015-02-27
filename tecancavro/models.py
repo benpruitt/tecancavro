@@ -19,7 +19,7 @@ try:
 except:
     from time import sleep
 
-from syringe import Syringe, SyringeError, SyringeTimeout
+from .syringe import Syringe, SyringeError, SyringeTimeout
 
 
 class XCaliburD(Syringe):
@@ -103,7 +103,7 @@ class XCaliburD(Syringe):
         self.cmd_chain = ''
         self.exec_time = 0
         self.sim_speed_change = False
-        self.sim_state = {k: v for k,v in self.state.iteritems()}
+        self.sim_state = {k: v for k,v in self.state.items()}
 
         # Init functions
         self.updateSpeeds()
@@ -172,9 +172,9 @@ class XCaliburD(Syringe):
         """
         Extracts `volume_ul` from `in_port`. If the relative plunger move
         exceeds the encoder range, the syringe will dispense to `out_port`,
-        which defaults to `self.waste_port`. If `minimal_reset` is `True`, 
+        which defaults to `self.waste_port`. If `minimal_reset` is `True`,
         state updates upon execution will be based on simulations rather
-        than polling. If `flush` is `True`, the contents of the syringe 
+        than polling. If `flush` is `True`, the contents of the syringe
         will be flushed to waste following the extraction.
 
         """
@@ -212,7 +212,7 @@ class XCaliburD(Syringe):
                     self.dispenseToWaste()
                 exec_time = self.executeChain(minimal_reset=True)
                 extracted = True
-            except SyringeError, e:
+            except SyringeError as e:
                 if e.err_code in [2, 3, 4]:
                     self.logDebug('extractToWaste: caught SyringeError [{}], '
                                   'retrying.')
@@ -314,7 +314,7 @@ class XCaliburD(Syringe):
         self.exec_time = 0
         if (on_execute and self.sim_speed_change):
             if minimal_reset:
-                self.state = {k: v for k,v in self.sim_state.iteritems()}
+                self.state = {k: v for k,v in self.sim_state.items()}
             else:
                 self.state['slope'] = self.sim_state['slope']
                 self.state['microstep'] = self.sim_state['microstep']
@@ -332,7 +332,7 @@ class XCaliburD(Syringe):
         """
         self.logCall('updateSimState', locals())
 
-        self.sim_state = {k: v for k,v in self.state.iteritems()}
+        self.sim_state = {k: v for k,v in self.state.items()}
 
     def cacheSimSpeeds(self):
         """
@@ -386,7 +386,7 @@ class XCaliburD(Syringe):
 
     @execWrap
     def dispenseToWaste(self, retain_port=True):
-        """ 
+        """
         Dispense current syringe contents to waste. If `retain_port` is true,
         the syringe will be returned to the original port after the dump.
         """
@@ -730,7 +730,7 @@ class XCaliburD(Syringe):
         """
         try:
             yield
-        except SyringeError, e:
+        except SyringeError as e:
             self.logDebug('ErrorHandler: caught error code {}'.format(
                           e.err_code))
             if e.err_code in [7, 9, 10]:
@@ -739,7 +739,7 @@ class XCaliburD(Syringe):
                 try:
                     self.logDebug('ErrorHandler: attempting re-init')
                     self.init()
-                except SyringeError, e:
+                except SyringeError as e:
                     self.logDebug('ErrorHandler: Error during re-init '
                                   '[{}]'.format(e.err_code))
                     if e.err_code in [7, 9, 10]:
@@ -755,7 +755,7 @@ class XCaliburD(Syringe):
                               're-raising [{}]'.format(e.err_code))
                 self.resetChain()
                 raise e
-        except Exception, e:
+        except Exception as e:
             self.resetChain()
             raise e
 

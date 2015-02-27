@@ -22,7 +22,7 @@ class TecanAPI(object):
     def __init__(self, addr):
         self.START_BYTE = 0x02
         self.STOP_BYTE = 0x03
-        self.SEQ_NUM = '111'
+        self.SEQ_NUM = b'111'
         self.addr = addr + 0x31  # Add 0x31 to compute hex address equiv.
         self._cmd = 0
 
@@ -51,28 +51,28 @@ class TecanAPI(object):
     def _analyzeFrame(self, raw_frame):
         try:
             # Get basic indices
-            frame = raw_frame[raw_frame.index(chr(self.START_BYTE)):
-                              raw_frame.index(chr(self.STOP_BYTE))+2]
+            raw_frame = bytearray(raw_frame)
+            frame_list = [byte for byte in raw_frame]
+            frame = frame_list[
+                frame_list.index(self.START_BYTE):
+                frame_list.index(self.STOP_BYTE)+2]
             if len(frame) < 5:
                 return False
             frame_list = [byte for byte in frame]
-            int_list = [ord(byte) for byte in frame]
-            etx_idx = int_list.index(self.STOP_BYTE)
+            etx_idx = frame_list.index(self.STOP_BYTE)
             data_len = etx_idx - 3
-        except:
+        except ValueError:
             return False
         # Integrity checks
-        if not frame_list[1] == '0':
-            # Master address is always 30h (ASCII 0)
-            return False
-        if not self._verifyChecksum(int_list):
+        if not self._verifyChecksum(frame_list):
             return False
         # Dump payload
         if data_len != 0:
-            data = ''.join(frame_list[3:etx_idx])
+            data = b''.join([chr(i).encode('utf-8') for i in
+                             frame_list[3:etx_idx]])
         else:
             data = None
-        status_frame = bin(ord(frame_list[2]))[2:].zfill(8)
+        status_frame = '{:08b}'.format(frame_list[2])
         payload = {
             'status_byte': status_frame,
             'data': data
@@ -81,9 +81,9 @@ class TecanAPI(object):
 
     def _buildFrame(self, repeat=False):
         if repeat:
-            seq_byte = int('00111{}'.format(self.SEQ_NUM), 2)
+            seq_byte = int(b'00111' + self.SEQ_NUM, 2)
         else:
-            seq_byte = int('00110{}'.format(next(self.rotateSeqNum())), 2)
+            seq_byte = int(b'00110' + next(self.rotateSeqNum()), 2)
         frame_list = [self.START_BYTE, self.addr, seq_byte] + \
                       self._assembleCmd() + [self.STOP_BYTE]
         checksum = self._buildChecksum(frame_list)
@@ -140,7 +140,7 @@ class TecanAPI(object):
         Generator function to rotate through possible Tecan API sequence
         numbers 1-7 and output a respective 3 bit str representation
         """
-        seq_nums = ['001', '010', '011', '100', '101', '110', '111']
+        seq_nums = [b'001', b'010', b'011', b'100', b'101', b'110', b'111']
         while True:
             for n in seq_nums:
                 self.SEQ_NUM = n
