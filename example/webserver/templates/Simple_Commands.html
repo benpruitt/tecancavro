@@ -1,0 +1,64 @@
+{% extends "layout.html" %}
+{% block content %}
+
+        <div id="page-wrapper">
+
+            <div class="container-fluid">
+
+                <!-- Page Heading -->
+                <div class="row">
+                    <div class="col-lg-12">
+                        <h1 class="page-header">
+                            Test Tecan Cavro Syringe - {% block title %}{% endblock %}
+                        </h1>
+                        
+                    </div>
+                </div>
+              <div class="container">
+                  <br>
+                  <div class="row">
+                      <div class="col-md-2">Serial Port:
+                          <select id="serial_port">
+                              {% for i in params.devices %}
+                              <option value="{{i[0]}}">{{i[0]}}</option>
+                              {% endfor %}
+                          </select>
+                      </div>
+                      <div class="col-md-2">Valve Port:
+                          <select id="port_number">
+                              {% for i in params.valves %}
+                              <option value="{{i}}">{{i}}</option>
+                              {% endfor %}
+                          </select>
+                      </div>
+                  </div>
+                  <br>
+
+                  <div class="row">
+                    <div class="col-md-4">
+                      <div class="input-group">
+                        <input type="number" id="extract_volume" name="extract_volume" min="0" max="1000"  class="form-control" placeholder="Extract volume (μL)">
+                        <span class="input-group-btn">
+                          <button class="btn btn-default" id="extract_btn" type="button">Extract</button>
+                        </span>
+                      </div>
+                    </div>
+                    <div class="col-md-4">
+                      <div class="input-group">
+                        <input type="number" id="dispense_volume" name="dispense_volume" min="0" max="1000" class="form-control" placeholder="Extract volume (μL)">
+                        <span class="input-group-btn">
+                          <button class="btn btn-default" id="dispense_btn" type="button">Dispense</button>
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <br>
+                  <div id="debugfield"></div>
+                </div>
+
+            </div>
+            <!-- /.container-fluid -->
+
+        </div>
+        <!-- /#page-wrapper -->
+{% endblock %}
