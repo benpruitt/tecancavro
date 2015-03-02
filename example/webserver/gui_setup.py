@@ -1,4 +1,7 @@
 from __future__ import print_function
+from warnings import filterwarnings
+filterwarnings('ignore', module='IPython.html.widgets')
+
 from IPython.html import widgets
 from IPython.display import display, clear_output, HTML
 
