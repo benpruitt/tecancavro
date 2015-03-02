@@ -30,14 +30,14 @@ def getSerialPumps():
              ser_port, 9600))) for ser_port, _, _ in pump_list]
 
 devices = getSerialPumps()
-devices = [('/dev/tty0', '')]
+# devices = [('/dev/tty0', '')]
 device_dict = dict(devices)
 
 valve_control = widgets.Dropdown(options=[str(x) for x in range(1,10)])
 port_control = widgets.Dropdown(options=[x[0] for x in devices])
 pull_volume_control = widgets.BoundedIntText(min=0, max=1000, value=0)
 push_volume_control = widgets.BoundedIntText(min=0, max=1000, value=0)
-notification_area = widgets.Text("")
+notification_area = widgets.HTML("")
 def update_notification(val):
     notification_area.value = val
 
@@ -47,54 +47,65 @@ def call_button(button, f):
     button.disabled = False
 
 pull_button = widgets.Button(description="Extract")
-def extract():
+def extract(arg):
     global device_dict
     push_button.disabled = True
     serial_port = port_control.value
-    port = valve_control.value
+    valve = int(valve_control.value)
     volume = pull_volume_control.value
-    update_notification("Received extract for: %d ul from port %d on serial port %s" % (volume,
-          port, serial_port))
+    update_notification("Received extract for: %d μl from port %d on serial port %s" % (volume,
+          valve, serial_port))
     if len(sp) > 0:
-        device_dict[serial_port].extract(port, volume)
+        device_dict[serial_port].extract(valve, volume)
     pull_button.disabled = False
 
 pull_button.on_click(extract)
 pull_button.disabled = False
 
 push_button = widgets.Button(description="Dispense")
-def dispense():
+def dispense(arg):
     global device_dict
     push_button.disabled = True
     serial_port = port_control.value
-    port = valve_control.value
+    valve = int(valve_control.value)
     volume = push_volume_control.value
-    update_notification("Received dispense for: %d ul from port %d on serial port %s" % (volume,
-          port, serial_port))
+    update_notification("Received dispense for: %d μl from port %d on serial port %s" % (volume,
+          valve, serial_port))
     if len(sp) > 0:
-        device_dict[serial_port].dispense(port, volume)
+        device_dict[serial_port].dispense(valve, volume)
     push_button.disabled = False
 
-push_button.on_click(lambda x: update_notification("poop")) #dispense
+push_button.on_click(dispense)
 push_button.disabled = False
 
 
 hbox0 = widgets.HBox()
-hbox0.children = [widgets.Text("Serial Port:"), port_control]
+sp_label = widgets.HTML("Serial Port: ")
+sp_label.width = 100
+hbox0.children = [sp_label, port_control]
+
 
 hbox1 = widgets.HBox()
-hbox1.children = [widgets.Text("Valve:"), valve_control]
+valve_label = widgets.HTML("Valve: ")
+valve_label.width = 100
+hbox1.children = [valve_label, valve_control]
 
 hbox2 = widgets.HBox()
+pull_button.width = 100
 hbox2.children = [pull_button, pull_volume_control]
 
 hbox3 = widgets.HBox()
+push_button.width = 100
 hbox3.children = [push_button, push_volume_control]
 
 hbox4 = widgets.HBox()
-hbox4.children = [widgets.Text("Notifications: "), notification_area]
+notification_label = widgets.HTML("Notifications: ")
+notification_label.width = 100
+hbox4.children = [notification_label, notification_area]
+notification_area.width = 600
 
 vbox = widgets.VBox()
+vbox.width = 600
 vbox.children = [hbox0, hbox1, hbox2, hbox3, hbox4]
 
 display(vbox)
