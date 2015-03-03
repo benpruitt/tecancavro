@@ -114,7 +114,7 @@ def extract_call():
     print("Received extract for: %d ul from port %d on serial port %s" % (volume,
           port, sp))
     if len(sp) > 0:
-        device_dict[sp].extract(port, volume, execute=True)
+        device_dict[sp].extract(port, volume)
     # device_dict[sp].doSomething(val)
     return ('', 204)
 
@@ -127,8 +127,18 @@ def dispense_call():
     print("Received dispense for: %d ul from port %d on serial port %s" % (volume,
           port, sp))
     if len(sp) > 0:
-        device_dict[sp].dispense(port, volume, execute=True)
+        device_dict[sp].dispense(port, volume)
     return ('', 204)
+
+@app.route('/execute')
+def execute_call():
+    global device_dict
+    sp = request.args['serial_port']
+    print("executing chain")
+    if len(sp) > 0:
+        device_dict[sp].executeChain()
+    return ('', 204)
+
 @app.route('/tables')
 def tables():
     return render_template('tables.html')
