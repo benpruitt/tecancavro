@@ -38,9 +38,10 @@ class XCaliburD(Syringe):
                    24: 130, 25: 120, 26: 110, 17: 100, 28: 90, 29: 80,
                    30: 70, 31: 60, 32: 50, 33: 40, 34: 30, 35: 20, 36: 18,
                    37: 16, 38: 14, 39: 12, 40: 10}
+    
 
-    def __init__(self, com_link, num_ports=9, syringe_ul=1000, direction='CW',
-                 microstep=False, waste_port=9, slope=14, init_force=0,
+    def __init__(self, com_link, num_ports=9, syringe_ul=5000, direction='CW',
+                 microstep=True, waste_port=9, slope=14, init_force=0,
                  debug=False, debug_log_path='.'):
         """
         Object initialization function.
@@ -54,7 +55,7 @@ class XCaliburD(Syringe):
             `num_ports` (int) : number of ports on the distribution valve
                 [default] - 9
             `syringe_ul` (int) : syringe volume in microliters
-                [default] - 1000
+                [default] - 000
             `microstep` (bool) : whether or not to operate in microstep mode
                 [default] - False (factory default)
             `waste_port` (int) : waste port for `extractToWaste`-like
@@ -399,8 +400,10 @@ class XCaliburD(Syringe):
             self.changePort(orig_port)
 
     @execWrap
-    def extract(self, from_port, volume_ul):
+    def extract(self, from_port, volume_ul, speed = None):
         """ Extract `volume_ul` from `from_port` """
+        if(speed != None):
+            self.setSpeed(speed)
         self.logCall('extract', locals())
 
         steps = self._ulToSteps(volume_ul)
@@ -408,8 +411,10 @@ class XCaliburD(Syringe):
         self.movePlungerRel(steps)
 
     @execWrap
-    def dispense(self, to_port, volume_ul):
+    def dispense(self, to_port, volume_ul, speed = None):
         """ Dispense `volume_ul` from `to_port` """
+        if(speed != None):
+            self.setSpeed(speed)
         self.logCall('dispense', locals())
 
         steps = self._ulToSteps(volume_ul)
@@ -860,9 +865,9 @@ class XCaliburD(Syringe):
         """
         if not microstep: microstep = self.state['microstep']
         if microstep:
-            steps = volume_ul * (24000/self.syringe_ul)
+            steps = int(volume_ul * (24000/float(self.syringe_ul))+.5)
         else:
-            steps = volume_ul * (3000/self.syringe_ul)
+            steps = int(volume_ul * (3000/float(self.syringe_ul))+.5)
         return steps
 
     def _simIncToPulses(self, speed_inc):
@@ -878,3 +883,5 @@ class XCaliburD(Syringe):
             self.sim_state['start_speed'] = top_speed
         if self.sim_state['cutoff_speed'] > top_speed:
             self.sim_state['cutoff_speed'] = top_speed
+
+    

@@ -6,6 +6,13 @@ from flask import redirect, url_for, escape, make_response
 from flask_bootstrap import Bootstrap
 
 # Create and configure out application.
+SPEED_CODES_STROKE = {0: 1.25, 1: 1.3, 2: 1.39, 3: 1.52, 4: 1.71, 5: 1.97,
+                          6: 2.37, 7: 2.77, 8: 3.03, 9: 3.36, 10: 3.77, 11: 4.3,
+                          12: 5.0, 13: 6.0, 14: 7.5, 15: 10.0, 16: 15.0, 17: 30.0,
+                          18: 31.58, 19: 33.33, 20: 35.29, 21: 37.50, 22: 40.0, 23: 42.86,
+                          24: 46.15, 25: 50.0, 26: 54.55, 17: 60.0, 28: 66.67, 29: 75.0,
+                          30: 85.71, 31: 100.0, 32: 120.0, 33: 150.0, 34: 200.0, 35: 300.0, 36: 333.33,
+                          37: 375.0, 38: 428.57, 39: 500.0, 40: 600.0}
 
 app = Flask(__name__)
 app.config.from_object(__name__)
@@ -29,6 +36,27 @@ except ImportError:  # Support direct import from package
 
 def findSerialPumps():
     return TecanAPISerial.findSerialPumps()
+def _rateToSpeed(rate_ul_s):
+        """
+        Converts a rate in microliters/seconds (ul/sec) to Speed Code.
+
+        Args:
+            `volume_ul` (int) : volume in microliters
+        Kwargs:
+            `microstep` (bool) : whether to convert to standard steps or
+                                 microsteps
+
+        """
+        #CHANGE TO MAKE BETTER STYLE
+        target_sec_per_stroke = 5000/rate_ul_s
+        closest_ind = 0
+        closest_val = SPEED_CODES_STROKE[closest_ind]
+        for item in SPEED_CODES_STROKE:
+            if(abs(SPEED_CODES_STROKE[item] - target_sec_per_stroke) < abs(SPEED_CODES_STROKE[closest_ind] - target_sec_per_stroke)):
+                closest_ind = item
+                closest_val = SPEED_CODES_STROKE[item]
+
+        return closest_ind
 
 
 def getSerialPumps():
@@ -41,6 +69,16 @@ def getSerialPumps():
 
 devices = getSerialPumps()
 device_dict = dict(devices)
+for item in devices:
+    device_dict[item[0]].init()
+    device_dict[item[0]].setSpeed(25)
+    #device_dict[item[0]].primePort(1,500)
+    #device_dict[item[0]].primePort(2,500)
+    #device_dict[item[0]].primePort(3,500)
+    #device_dict[item[0]].primePort(4,500)
+    #device_dict[item[0]].primePort(6,500)
+    #device_dict[item[0]].primePort(7,500)
+    #device_dict[item[0]].primePort(8,500)
 
 #def get_resource_as_string(name, charset='utf-8'):
  #   with app.open_resource(name) as f:
@@ -111,10 +149,25 @@ def extract_call():
     volume = int(request.args['volume'])
     port = int(request.args['port'])
     sp = request.args['serial_port']
+    rate = int(request.args['rate'])
+    if(rate != 0 and len(sp) > 0):
+        newSpeed = _rateToSpeed(rate)
+        #device_dict[sp].setSpeed(newSpeed)
+        print("Speed Calc")
+        print(rate)
+        print(newSpeed)
+
+    #print("here")
+    willex = int(request.args['exec'])
+    if(willex == 0):
+        executing = False
+    else:
+        executing = True
+    print(executing)
     print("Received extract for: %d ul from port %d on serial port %s" % (volume,
           port, sp))
     if len(sp) > 0:
-        device_dict[sp].extract(port, volume)
+        device_dict[sp].extract(port, volume, speed = newSpeed, execute = executing)
     # device_dict[sp].doSomething(val)
     return ('', 204)
 
@@ -124,10 +177,23 @@ def dispense_call():
     volume = int(request.args['volume'])
     port = int(request.args['port'])
     sp = request.args['serial_port']
+    rate = int(request.args['rate'])
+    if(rate != 0 and len(sp) > 0):
+        newSpeed = _rateToSpeed(rate)
+        #device_dict[sp].setSpeed(newSpeed)
+        print("Speed Calc")
+        print(rate)
+        print(newSpeed)
+
+    willex = int(request.args['exec'])
+    if(willex == 0):
+        executing = False
+    else:
+        executing = True
     print("Received dispense for: %d ul from port %d on serial port %s" % (volume,
           port, sp))
     if len(sp) > 0:
-        device_dict[sp].dispense(port, volume)
+        device_dict[sp].dispense(port, volume, speed = newSpeed, execute = executing)
     return ('', 204)
 
 @app.route('/execute')
@@ -148,3 +214,4 @@ if __name__ == '__main__':
     
     app.run()
     # app.run(host='0.0.0.0')
+

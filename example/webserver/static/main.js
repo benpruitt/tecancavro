@@ -5,14 +5,18 @@ $(document).ready(function() {
     var volume = $( "#extract_volume").val();
     var port = $("#port_number").val();
     var serport = $( "#serial_port").val() || '';
-    if ( volume > 0 && volume < 1000) {
+    var rate = $("#rate_box").val()
+    if ( volume > 0 && volume <= 5000) {
         $( "#debugfield" ).text( "Valid extract command..." ).show();
         $.get('extract',
               {'volume': volume,
                'port': port,
-               'serial_port': serport
+               'serial_port': serport,
+               'exec': 1,
+               'rate': rate
                 }
             );
+        
     } else {
         $( "#debugfield" ).text( "Not valid extract command!" ).show().fadeOut( 1000 );
     }
@@ -24,17 +28,21 @@ $( "#dispense_btn" ).click(function( event ) {
     var volume = $( "#dispense_volume").val();
     var port = $("#port_number").val();
     var serport = $( "#serial_port").val() || '';
-    if ( volume > 0 && volume < 1000) {
+    if ( volume > 0 && volume <= 5000) {
         $( "#debugfield" ).text( "Validated dispense command..." ).show();
         $.get('dispense',
               {'volume': volume,
                'port': port,
-               'serial_port': serport
+               'serial_port': serport,
+               'exec': 1,
+               'rate': rate
                 }
             );
+        
     } else {
         $( "#debugfield" ).text( "Not valid dispense command!" ).show().fadeOut( 1000 );
     }
+
     event.preventDefault();
 });
 
@@ -89,13 +97,17 @@ $( "#submitProtocol" ).click(function( event ) {
         $.get('extract',
               {'volume': volume,
                'port': inport,
-               'serial_port': serport
+               'serial_port': serport,
+               'exec': 0,
+               'rate': flowRate
                 }
             );
         $.get('dispense',
               {'volume': volume,
                'port': outport,
-               'serial_port': serport
+               'serial_port': serport,
+               'exec': 0,
+               'rate': flowRate
                 }
             );
 
