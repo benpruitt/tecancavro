@@ -25,14 +25,14 @@ app.jinja_env.lstrip_blocks = True
 
 
 # Insert a row of data
-c.execute("INSERT INTO stocks VALUES ('2006-01-05','BUY','RHAT',100,35.14)")
+#c.execute("INSERT INTO stocks VALUES ('2006-01-05','BUY','RHAT',100,35.14)")
 
 # Save (commit) the changes
-conn.commit()
+#conn.commit()
 
 # We can also close the connection if we are done with it.
 # Just be sure any changes have been committed or they will be lost.
-conn.close()
+#conn.close()
 
 try:
     from tecancavro.models import XCaliburD
