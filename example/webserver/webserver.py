@@ -4,6 +4,7 @@ from flask import Flask, render_template, current_app, request
 from flask import json, jsonify, make_response, session, send_from_directory
 from flask import redirect, url_for, escape, make_response
 from flask_bootstrap import Bootstrap
+import sqlite3
 
 # Create and configure out application.
 SPEED_CODES_STROKE = {0: 1.25, 1: 1.3, 2: 1.39, 3: 1.52, 4: 1.71, 5: 1.97,
@@ -21,6 +22,17 @@ Bootstrap(app)
 
 app.jinja_env.trim_blocks = True
 app.jinja_env.lstrip_blocks = True
+
+
+# Insert a row of data
+c.execute("INSERT INTO stocks VALUES ('2006-01-05','BUY','RHAT',100,35.14)")
+
+# Save (commit) the changes
+conn.commit()
+
+# We can also close the connection if we are done with it.
+# Just be sure any changes have been committed or they will be lost.
+conn.close()
 
 try:
     from tecancavro.models import XCaliburD

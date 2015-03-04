@@ -28,6 +28,7 @@ $( "#dispense_btn" ).click(function( event ) {
     var volume = $( "#dispense_volume").val();
     var port = $("#port_number").val();
     var serport = $( "#serial_port").val() || '';
+    var rate = $("#rate_box").val()
     if ( volume > 0 && volume <= 5000) {
         $( "#debugfield" ).text( "Validated dispense command..." ).show();
         $.get('dispense',
