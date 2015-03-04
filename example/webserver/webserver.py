@@ -84,13 +84,13 @@ device_dict = dict(devices)
 for item in devices:
     device_dict[item[0]].init()
     device_dict[item[0]].setSpeed(25)
-    #device_dict[item[0]].primePort(1,500)
-    #device_dict[item[0]].primePort(2,500)
-    #device_dict[item[0]].primePort(3,500)
-    #device_dict[item[0]].primePort(4,500)
-    #device_dict[item[0]].primePort(6,500)
-    #device_dict[item[0]].primePort(7,500)
-    #device_dict[item[0]].primePort(8,500)
+    device_dict[item[0]].primePort(1,500)
+    device_dict[item[0]].primePort(2,500)
+    device_dict[item[0]].primePort(3,500)
+    device_dict[item[0]].primePort(4,500)
+    device_dict[item[0]].primePort(6,500)
+    device_dict[item[0]].primePort(7,500)
+    device_dict[item[0]].primePort(8,500)
 
 #def get_resource_as_string(name, charset='utf-8'):
  #   with app.open_resource(name) as f:
