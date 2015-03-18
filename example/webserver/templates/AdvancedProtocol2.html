@@ -1,0 +1,134 @@
+{% extends "layout.html" %}
+{% block content %}
+
+        <div id="page-wrapper">
+
+            <div class="container-fluid">
+
+                <!-- Page Heading -->
+                <div class="row">
+                    <div class="col-lg-12">
+                        <h1 class="page-header">
+                            Test Tecan Cavro Syringe - {% block title %}{% endblock %}
+                        </h1>
+                        
+                    </div>
+                </div>
+
+                <div class="col-md-2">Serial Port:
+                          <select id="serial_port">
+                              {% for i in params.devices %}
+                              <option value="{{i[0]}}">{{i[0]}}</option>
+                              {% endfor %}
+                          </select>
+                      </div>
+             
+                  <br>
+                  <div class="col-lg-12">
+                        <h2>Build A Protocol</h2>
+                        <div class="table-responsive">
+                            <table class="table table-hover table-striped" id="protocolTable">
+                                <thead>
+                                    <tr>
+                                        <th>Item</th>
+                                        <th>From Port</th>
+                                        <th>To Port</th>
+                                        <th>Start Date</th>
+                                        <th>Start Time</th>
+                                        <th>Flow Rate</th>
+                                        <th>Volume</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                  {% for j in params.protocols %}
+                                    <tr>
+                                        <td>
+                                           <label>{{j["num"]}}</label>
+                                        </td>
+                                        <td>
+                                          <div class = "col-lg-12">
+                                            <select id = '{{"from" + j["num"]}}' class="form-control">
+                                                {% for i in params.valves %}
+                                            {% if i == j["fromid"] %}
+                                            <option value="{{i}}" selected>{{i}}</option>
+                                            {% else %}
+                                            <option value="{{i}}">{{i}}</option>
+                                            {% endif %}
+                                            {% endfor %}
+                                            </select> 
+                                          </div>
+                                        </td>
+                                        <td>
+                                          <div class = "col-lg-12">
+                                            <select id = '{{"to" + j["num"]}}' class="form-control">
+                                                {% for i in params.valves %}
+                                                  {% if i == j["toid"] %}
+                                            <option value="{{i}}" selected>{{i}}</option>
+                                            {% else %}
+                                            <option value="{{i}}">{{i}}</option>
+                                            {% endif %}
+                                                {% endfor %}
+                                            </select> 
+                                          </div>
+                                        </td>
+                                        <td>
+                                          <div  class = "col-lg-8">
+                                          <div class="form-group">
+                                              
+                                              <p><input type="text" id = '{{"date" + j["num"]}}'></p>
+                                          </div>
+                                        </div>
+                                        </td>
+                                        <td>
+                                          <div  class = "col-lg-8">
+                                          <div class="form-group">
+                                        <div class="input-append bootstrap-timepicker">
+                                            <input id = '{{"time" + j["num"]}}' type="text" class="input-small">
+                                              <span class="add-on"><i class="icon-time"></i></span>
+                                              </div>
+                                              </div>
+                                        </div>
+                                        </td>
+                                        <td>
+                                        <div class = "col-lg-8">
+                                          <div class="form-group">
+                                              
+                                              <input  id = '{{"rate" + j["num"]}}' class="form-control" placeholder="ul/sec" value='{{j["rate"]}}'>
+                                          </div>
+                                        </div>
+                                        </td>
+                                        <td>
+                                        <div class = "col-lg-8">
+                                          <div class="form-group">
+                                              
+                                              <input id = '{{"vol" + j["num"]}}' class="form-control" placeholder="ul" value='{{j["vol"]}}'>
+                                          </div>
+                                        </div>
+                                        </td>
+                                    </tr>
+                                    
+
+                                    
+                                    {% endfor %}
+                                  
+                                </tbody>
+                            </table>
+
+                            <button id="newrows" class="btn btn-default">Add New Row</button>
+                            <button id="submitProtocolAdv" class="btn btn-default">Submit Protocol</button>
+                            <button id="saveProtocol" class="btn btn-default">Save Protocol</button>
+                        </div>
+                    </div>
+                </div>
+                <!-- /.row -->
+
+                    
+
+                  
+
+            </div>
+            <!-- /.container-fluid -->
+
+        </div>
+        <!-- /#page-wrapper -->
+{% endblock %}

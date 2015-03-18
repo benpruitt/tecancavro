@@ -27,6 +27,25 @@
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/sb-admin.css') }}">
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/plugins/morris.css') }}">
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='font-awesome/css/font-awesome.min.css') }}">
+    <meta charset="utf-8">
+  <title>jQuery UI Datepicker - Default functionality</title>
+  <link rel="stylesheet" href="//code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css">
+  <script src="//code.jquery.com/ui/1.11.4/jquery-ui.js"></script>
+  <script>
+  $(function() {
+    $( "#date1" ).datepicker();
+  });
+  </script>
+ 
+        <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='timepicker/css/bootstrap-timepicker.min.css') }}">
+       <!--<script type="text/javascript" src="{{ url_for('static', filename='timepicker/js/bootstrap-timepicker.min.js') }}"></script> -->
+       <script type="text/javascript" src="{{ url_for('static', filename='timepicker/js/bootstrap-timepicker.js') }}"></script>
+
+        <script>
+        $(function() {
+            $('#time1').timepicker();
+        });
+        </script>
 
 </head>
 
@@ -44,27 +63,19 @@
                     <span class="icon-bar"></span>
                     <span class="icon-bar"></span>
                 </button>
-                <a class="navbar-brand" href="index.html">SB Admin</a>
+                <a class="navbar-brand">Church Lab</a>
             </div>
             <!-- Top Menu Items -->
             <ul class="nav navbar-right top-nav">
                 
                 
                 <li class="dropdown">
-                    <a href="#" class="dropdown-toggle" data-toggle="dropdown"><i class="fa fa-user"></i> John Smith <b class="caret"></b></a>
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown"><i class="fa fa-user"></i>   {{params.username}} <b class="caret"></b></a>
                     <ul class="dropdown-menu">
-                        <li>
-                            <a href="#"><i class="fa fa-fw fa-user"></i> Profile</a>
-                        </li>
-                        <li>
-                            <a href="#"><i class="fa fa-fw fa-envelope"></i> Inbox</a>
-                        </li>
-                        <li>
-                            <a href="#"><i class="fa fa-fw fa-gear"></i> Settings</a>
-                        </li>
+                       
                         <li class="divider"></li>
                         <li>
-                            <a href="#"><i class="fa fa-fw fa-power-off"></i> Log Out</a>
+                            <a href="{{ url_for('Logout') }}"><i class="fa fa-fw fa-power-off"></i> Log Out</a>
                         </li>
                     </ul>
                 </li>
@@ -77,6 +88,12 @@
                     </li>
                     <li >
                         <a href="{{ url_for('Protocol') }}"><i class="fa fa-fw fa-dashboard"></i> Build a Protocol</a>
+                    </li>
+                    <li >
+                        <a href="{{ url_for('AdvancedProtocol') }}"><i class="fa fa-fw fa-dashboard"></i> Advanced Protocol</a>
+                    </li>
+                    <li >
+                        <a href="{{ url_for('MyProtocols') }}"><i class="fa fa-fw fa-dashboard"></i> My Protocols</a>
                     </li>
                 </ul>
             </div>
