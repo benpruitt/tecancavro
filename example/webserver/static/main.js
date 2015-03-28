@@ -52,9 +52,7 @@ $( "#stop_exec" ).click(function( event ) {
 
     var serport = $( "#serial_port").val() || '';
         $.get('halt',
-              {
-               'serial_port': serport
-               
+              {'serial_port': serport
                 }
             );
     

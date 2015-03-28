@@ -405,7 +405,7 @@ def advProtocol():
     return ('', 204)
 
 def createTask(from_port_id, to_port_id, flowrate_ul_s, volume_ul, serial_port, datetime_execute):
-    if(len(serial_port) > 0):
+    if(len(serial_port) == 0):
         speed_to_use = 0
         if(flowrate_ul_s != 0):
             speed_to_use = _rateToSpeed(flowrate_ul_s)
@@ -428,7 +428,7 @@ def createTask(from_port_id, to_port_id, flowrate_ul_s, volume_ul, serial_port, 
                 speed_to_use = speed_to_use - 1
                 actual_rate_ul_s = PUMP_VOLUME_UL / float(SPEED_CODES_STROKE[speed_to_use])
                 actual_time_s = volume_ul / actual_rate_ul_s
-
+            print("her")
             pulsatile_flowrate_options[OPTION_TO_USE](from_port_id, to_port_id, flowrate_ul_s, actual_rate_ul_s, actual_time_s, speed_to_use, target_time_s, volume_ul, serial_port, datetime_execute)
 
 def fixed_number_breaks(from_port_id, to_port_id, flowrate_ul_s, actual_rate_ul_s, actual_time_s, speed_to_use, target_time_s, volume_ul, serial_port, datetime_execute, numbreaks = 100):
@@ -476,14 +476,17 @@ def constant_flow(from_port_id, to_port_id, flowrate_ul_s, actual_rate_ul_s, act
         volume_remaining = volume_ul
         next_dt = datetime_execute
         while volume_remaining > 0:
+            print(next_dt)
             if volume_remaining >= PUMP_VOLUME_UL:
-                performtask.apply_async(args =[from_port_id, to_port_id, actual_rate_ul_s, PUMP_VOLUME_UL, serial_port, speed_to_use], eta = next_dt)
+                #performtask.apply_async(args =[from_port_id, to_port_id, actual_rate_ul_s, PUMP_VOLUME_UL, serial_port, speed_to_use], eta = next_dt)
                 volume_remaining = volume_remaining - PUMP_VOLUME_UL
                 time_for_task = PUMP_VOLUME_UL / flowrate_ul_s + (3 * SPEED_CODES_STROKE[EXTRACT_SPEED])
-                next_dt = datetime.timedelta(0,time_for_task)
+                next_dt = next_dt + datetime.timedelta(0,time_for_task)
             else:
-                performtask.apply_async(args =[from_port_id, to_port_id, actual_rate_ul_s, volume_remaining, serial_port, speed_to_use], eta = next_dt)
+                #performtask.apply_async(args =[from_port_id, to_port_id, actual_rate_ul_s, volume_remaining, serial_port, speed_to_use], eta = next_dt)
                 volume_remaining = 0
+
+
 pulsatile_flowrate_options = {0 : fixed_number_breaks,
                               1 : fixed_break_interval,
                               2 : mimic_heartbeat,
