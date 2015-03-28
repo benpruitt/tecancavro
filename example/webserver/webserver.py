@@ -17,7 +17,7 @@ import pytz
 from pytz import timezone
  
 PUMP_VOLUME_UL = 5000.0
-EXTRACT_SPEED = 0
+EXTRACT_SPEED = 12
 
 class User(object):
 
