@@ -10,6 +10,8 @@ pip install amqp
 pip install anyjson
 pip install billiard
 pip install celery
+pip install passlib
+pip install pyserial
 wget http://redis.googlecode.com/files/redis-2.6.4.tar.gz
 tar xzf redis-2.6.4.tar.gz
 cd redis-2.6.4
@@ -24,3 +26,7 @@ venv/bin/celery worker -A webserver.celery --loglevel=info
 OPEN A THIRD TERMINAL WINDOW AND RETURN TO webserver DIRECTORY AND EXECUTE
 
 venv/bin/python webserver.py
+
+GO TO
+
+http://10.11.32.12:5000/

@@ -16,6 +16,8 @@ from werkzeug.security import generate_password_hash, \
 import pytz
 from pytz import timezone
  
+PUMP_VOLUME_UL = 5000.0
+EXTRACT_SPEED = 0
 
 class User(object):
 
@@ -38,6 +40,15 @@ SPEED_CODES_STROKE = {0: 1.25, 1: 1.3, 2: 1.39, 3: 1.52, 4: 1.71, 5: 1.97,
                           24: 46.15, 25: 50.0, 26: 54.55, 17: 60.0, 28: 66.67, 29: 75.0,
                           30: 85.71, 31: 100.0, 32: 120.0, 33: 150.0, 34: 200.0, 35: 300.0, 36: 333.33,
                           37: 375.0, 38: 428.57, 39: 500.0, 40: 600.0}
+FIXED_NUMBER_BREAKS_OPTION = 0
+FIXED_BREAK_INTERVAL_OPTION = 1
+MIMIC_HEARTBEAT_OPTION = 2
+CONTANT_FLOW_OPTION = 3
+
+OPTION_TO_USE = CONTANT_FLOW_OPTION
+ALLOW_CONSTANT = True
+
+
 
 app = Flask(__name__)
 app.config['CELERY_BROKER_URL'] = 'redis://localhost:6379/0'
@@ -381,25 +392,102 @@ def advProtocol():
         print(dt)
         eastern = timezone('US/Eastern')
         dt = eastern.localize(dt)
-        
-        performtask.apply_async(args =[fromports[i], toports[i], flowrates[i], volumes[i],sp], eta = dt)
-
-
+        createTask(int(fromports[i]), int(toports[i]), float(flowrates[i]), float(volumes[i]), sp, dt)
     return ('', 204)
+
+def createTask(from_port_id, to_port_id, flowrate_ul_s, volume_ul, serial_port, datetime_execute):
+    if(len(serial_port) > 0):
+        speed_to_use = 0
+        if(flowrate_ul_s != 0):
+            speed_to_use = _rateToSpeed(flowrate_ul_s)
+        else:
+            return "ERROR"
+
+        actual_rate_ul_s = PUMP_VOLUME_UL / float(SPEED_CODES_STROKE[speed_to_use])
+        target_time_s = volume_ul / flowrate_ul_s
+        actual_time_s = volume_ul / actual_rate_ul_s
+        if(ALLOW_CONSTANT and target_time_s == actual_time_s and volume_ul <= PUMP_VOLUME_UL):
+            performtask.apply_async(args =[from_port_id, to_port_id, actual_rate_ul_s, volume_ul,serial_port,speed_to_use], eta = datetime_execute)
+        else:
+            if actual_time_s >= target_time_s:
+                print("hi")
+            if speed_to_use == 0:
+                error_message = "Could not complete with bounds specified, pump does not have a rate that is fast enough"
+                print(error_message)
+                return error_message
+            else:
+                speed_to_use = speed_to_use - 1
+                actual_rate_ul_s = PUMP_VOLUME_UL / float(SPEED_CODES_STROKE[speed_to_use])
+                actual_time_s = volume_ul / actual_rate_ul_s
+
+            pulsatile_flowrate_options[OPTION_TO_USE](from_port_id, to_port_id, flowrate_ul_s, actual_rate_ul_s, actual_time_s, speed_to_use, target_time_s, volume_ul, serial_port, datetime_execute)
+
+def fixed_number_breaks(from_port_id, to_port_id, flowrate_ul_s, actual_rate_ul_s, actual_time_s, speed_to_use, target_time_s, volume_ul, serial_port, datetime_execute, numbreaks = 100):
+    time_to_makeup_s = target_time_s - actual_time_s
+    assert time_to_makeup_s > 0
+
+    time_per_break = time_to_makeup_s/numbreaks
+
+    ##ADD TIME TO SWITCH PORT
+    if(time_per_break < SPEED_CODES_STROKE[EXTRACT_SPEED]):
+        error_message = "Cannot complete with bounds specified, not enough time during breaks to refill"
+        print(error_message)
+        return error_message
+
+    time_per_execution = actual_time_s / numbreaks
+    volume_per_execution = time_per_execution * actual_rate_ul_s
+    breaks = [0]
+    executions = [time_per_break]
+    for i in range(0, numbreaks-1): # build arrays for start times of breaks and executions
+        breaks.append(executions[i] + time_per_execution)
+        executions.append(breaks[i+1] + time_per_break)
+
+def fixed_break_interval(from_port_id, to_port_id, flowrate_ul_s, actual_rate_ul_s, actual_time_s, speed_to_use, target_time_s, volume_ul, serial_port, datetime_execute, numbreaks = 100):
+    print("hi")
+def mimic_heartbeat(from_port_id, to_port_id, flowrate_ul_s, actual_rate_ul_s, actual_time_s, speed_to_use, target_time_s, volume_ul, serial_port, datetime_execute, numbreaks = 100):
+    print("hi")
+                      
+
+
+    # else:
+    #             volume_remaining = volume_ul
+    #             next_dt = datetime_execute
+    #             while volume_remaining > 0:
+    #                 if volume_remaining >= PUMP_VOLUME_UL:
+    #                     performtask.apply_async(args =[from_port_id, to_port_id, flowrate_ul_s, PUMP_VOLUME_UL, serial_port, speed_to_use], eta = next_dt)
+    #                     volume_remaining = volume_remaining - PUMP_VOLUME_UL
+    #                 else:
+    #                     performtask.apply_async(args =[from_port_id, to_port_id, flowrate_ul_s, volume_remaining, serial_port, speed_to_use], eta = next_dt)
+    #                     volume_remaining = 0
+
+def constant_flow(from_port_id, to_port_id, flowrate_ul_s, actual_rate_ul_s, actual_time_s, speed_to_use, target_time_s, volume_ul, serial_port, datetime_execute):
+    if(target_time_s == actual_time_s and volume_ul <= PUMP_VOLUME_UL):
+        performtask.apply_async(args =[from_port_id, to_port_id, flowrate_ul_s, volume_ul,serial_port,speed_to_use], eta = datetime_execute)
+    else:
+        volume_remaining = volume_ul
+        next_dt = datetime_execute
+        while volume_remaining > 0:
+            if volume_remaining >= PUMP_VOLUME_UL:
+                performtask.apply_async(args =[from_port_id, to_port_id, actual_rate_ul_s, PUMP_VOLUME_UL, serial_port, speed_to_use], eta = next_dt)
+                volume_remaining = volume_remaining - PUMP_VOLUME_UL
+                time_for_task = PUMP_VOLUME_UL / flowrate_ul_s + (3 * SPEED_CODES_STROKE[EXTRACT_SPEED])
+                next_dt = datetime.timedelta(0,time_for_task)
+            else:
+                performtask.apply_async(args =[from_port_id, to_port_id, actual_rate_ul_s, volume_remaining, serial_port, speed_to_use], eta = next_dt)
+                volume_remaining = 0
+pulsatile_flowrate_options = {0 : fixed_number_breaks,
+                              1 : fixed_break_interval,
+                              2 : mimic_heartbeat,
+                              3 : constant_flow
+}
+    
 @celery.task
-def performtask(from_id, to_id, rate_ul_s, vol_ul,sp):
+def performtask(from_id, to_id, rate_ul_s, vol_ul,sp,speed_to_use):
     global device_dict, current_user,current_user_id
 
-    if(rate_ul_s != 0 and len(sp) > 0):
-        newSpeed = _rateToSpeed(int(rate_ul_s))
-        #device_dict[sp].setSpeed(newSpeed)
-        print("Speed Calc")
-        print(rate_ul_s)
-        print(newSpeed)
-
     if len(sp) > 0:
-        device_dict[sp].extract(int(from_id), int(vol_ul), speed = 12)
-        device_dict[sp].dispense(int(to_id), int(vol_ul), speed = newSpeed)
+        device_dict[sp].extract(int(from_id), int(vol_ul), speed = EXTRACT_SPEED)
+        device_dict[sp].dispense(int(to_id), int(vol_ul), speed = speed_to_use)
         device_dict[sp].executeChain()
 
     print("Performing Task")
