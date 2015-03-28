@@ -149,6 +149,7 @@ $( "#submitProtocolAdv" ).click(function( event ) {
   var datetimes = [];
   var flowrates = [];
   var volumes = [];
+  var finals = [];
 
   for (i = 1; i < rowLength; i++){
       var oCells = oTable.rows.item(i).cells;
@@ -183,6 +184,9 @@ $( "#submitProtocolAdv" ).click(function( event ) {
         var idstr = "date" + idnum;
         var dateId = document.getElementById(idstr);
         date = dateId.value
+        var idstr = "final" + idnum;
+        var finalId = document.getElementById(idstr);
+        finals[i-1] = finalId.value
 
         var idstr = "time" + idnum;
         var timeId = document.getElementById(idstr);
@@ -220,7 +224,8 @@ $( "#submitProtocolAdv" ).click(function( event ) {
                'serial_port': serport,
                'datetimes': JSON.stringify(datetimes),
                'flowrates': JSON.stringify(flowrates),
-               'volumes': JSON.stringify(volumes)
+               'volumes': JSON.stringify(volumes),
+               'finals': JSON.stringify(finals)
                 }
             );
 
@@ -342,14 +347,17 @@ $( "#newrows" ).click(function( event ) {
     var cell5 = row.insertCell(4);
     var cell6 = row.insertCell(5);
     var cell7 = row.insertCell(6);
+    var cell8 = row.insertCell(7);
 
     cell1.innerHTML = "<label>" + protocolItems + "</label>";
     cell2.innerHTML = "<div class = 'col-lg-12'><select id = 'from" + protocolItems + "' class='form-control'><option value='1'>1</option><option value='2'>2</option><option value='3'>3</option><option value='4'>4</option><option value='5'>5</option><option value='6'>6</option><option value='7'>7</option><option value='8'>8</option><option value='9'>9</option></select></div>";
     cell3.innerHTML = "<div class = 'col-lg-12'><select id = 'to" + protocolItems + "' class='form-control'><option value='1'>1</option><option value='2'>2</option><option value='3'>3</option><option value='4'>4</option><option value='5'>5</option><option value='6'>6</option><option value='7'>7</option><option value='8'>8</option><option value='9' selected>9</option></select></div>";
-    cell4.innerHTML = "<div  class = 'col-lg-8'><div class='form-group'><p><input type='text' id='date" + protocolItems+"'></p></div>"
-    cell5.innerHTML = "<div  class = 'col-lg-8'><div class='form-group'><div class='input-append bootstrap-timepicker'><input id='time" + protocolItems+"' type='text' class='input-small'><span class='add-on'><i class='icon-time'></i></span></div></div></div>"
-    cell6.innerHTML = "<div class = 'col-lg-8'><div class='form-group'><input id = 'rate" + protocolItems + "' class='form-control' placeholder='ul/sec'></div></div>";
-    cell7.innerHTML = "<div class = 'col-lg-8'><div class='form-group'><input id = 'vol" + protocolItems + "' class='form-control' placeholder='ul'></div></div>"
+    cell4.innerHTML = "<div class = 'col-lg-12'><select id = 'final" + protocolItems + "' class='form-control'><option value='0' selected>0</option><option value='1'>1</option><option value='2'>2</option><option value='3'>3</option><option value='4'>4</option><option value='5'>5</option><option value='6'>6</option><option value='7'>7</option><option value='8'>8</option><option value='9' >9</option></select></div>";
+
+    cell5.innerHTML = "<div  class = 'col-lg-8'><div class='form-group'><p><input type='text' id='date" + protocolItems+"'></p></div>"
+    cell6.innerHTML = "<div  class = 'col-lg-8'><div class='form-group'><div class='input-append bootstrap-timepicker'><input id='time" + protocolItems+"' type='text' class='input-small'><span class='add-on'><i class='icon-time'></i></span></div></div></div>"
+    cell7.innerHTML = "<div class = 'col-lg-8'><div class='form-group'><input id = 'rate" + protocolItems + "' class='form-control' placeholder='ul/sec'></div></div>";
+    cell8.innerHTML = "<div class = 'col-lg-8'><div class='form-group'><input id = 'vol" + protocolItems + "' class='form-control' placeholder='ul'></div></div>"
 
     strdate = "#date" + protocolItems 
     $(strdate).datepicker();

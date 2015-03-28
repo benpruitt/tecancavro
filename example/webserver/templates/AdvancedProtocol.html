@@ -33,6 +33,7 @@
                                         <th>Item</th>
                                         <th>From Port</th>
                                         <th>To Port</th>
+                                        <th>Final Port</th>
                                         <th>Start Date</th>
                                         <th>Start Time</th>
                                         <th>Flow Rate</th>
@@ -62,6 +63,20 @@
                                                     {% if i == 9 %}
                                                     selected
                                                     {% endif %}
+                                                  >{{i}}</option>
+                                                {% endfor %}
+                                            </select> 
+                                          </div>
+                                        </td>
+                                        <td>
+                                          <div class = "col-lg-12">
+                                            <select id = "final1" class="form-control">
+                                              <option value="0"
+                                                    
+                                                  selected>0</option>
+                                                {% for i in params.valves %}
+                                                  <option value="{{i}}"
+                                                    
                                                   >{{i}}</option>
                                                 {% endfor %}
                                             </select> 
@@ -112,6 +127,7 @@
 
                             <button id="newrows" class="btn btn-default">Add New Row</button>
                             <button id="submitProtocolAdv" class="btn btn-default">Submit Protocol</button>
+                            <button id="saveProtocol" class="btn btn-default">Save Protocol</button>
                         </div>
                     </div>
                 </div>
