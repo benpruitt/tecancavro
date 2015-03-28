@@ -405,7 +405,7 @@ def advProtocol():
     return ('', 204)
 
 def createTask(from_port_id, to_port_id, flowrate_ul_s, volume_ul, serial_port, datetime_execute):
-    if(len(serial_port) == 0):
+    if(len(serial_port) > 0):
         speed_to_use = 0
         if(flowrate_ul_s != 0):
             speed_to_use = _rateToSpeed(flowrate_ul_s)
