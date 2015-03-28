@@ -476,7 +476,7 @@ def constant_flow(from_port_id, to_port_id, final_port_id,flowrate_ul_s, actual_
         if(final_port_id != 0):
             time_for_task = volume_ul / actual_rate_ul_s + (2 * SPEED_CODES_STROKE[EXTRACT_SPEED])
             next_dt = datetime_execute + datetime.timedelta(0,time_for_task)
-            performtask.apply_async(args =[9, final_port_id, actual_rate_ul_s, PUMP_VOLUME_UL, serial_port, 0], eta = next_dt)
+            performtask.apply_async(args =[9, final_port_id, actual_rate_ul_s, PUMP_VOLUME_UL, serial_port, 1], eta = next_dt)
 
     else:
         volume_remaining = volume_ul
@@ -489,7 +489,7 @@ def constant_flow(from_port_id, to_port_id, final_port_id,flowrate_ul_s, actual_
                 time_for_task = PUMP_VOLUME_UL / flowrate_ul_s + (3 * SPEED_CODES_STROKE[EXTRACT_SPEED])
                 next_dt = next_dt + datetime.timedelta(0,time_for_task)
                 if(final_port_id != 0):
-                    performtask.apply_async(args =[9, final_port_id, actual_rate_ul_s, PUMP_VOLUME_UL, serial_port, 0], eta = next_dt)
+                    performtask.apply_async(args =[9, final_port_id, actual_rate_ul_s, PUMP_VOLUME_UL, serial_port, 1], eta = next_dt)
                     time_for_task = (4 * SPEED_CODES_STROKE[EXTRACT_SPEED])
                     next_dt = next_dt + datetime.timedelta(0,time_for_task)
             else:
@@ -498,7 +498,7 @@ def constant_flow(from_port_id, to_port_id, final_port_id,flowrate_ul_s, actual_
                 time_for_task = volume_remaining / flowrate_ul_s + (3 * SPEED_CODES_STROKE[EXTRACT_SPEED])
                 next_dt = next_dt + datetime.timedelta(0,time_for_task)
                 if(final_port_id != 0):
-                    performtask.apply_async(args =[9, final_port_id, actual_rate_ul_s, PUMP_VOLUME_UL, serial_port, 0], eta = next_dt)
+                    performtask.apply_async(args =[9, final_port_id, actual_rate_ul_s, PUMP_VOLUME_UL, serial_port, 1], eta = next_dt)
                     
 
 
