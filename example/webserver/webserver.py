@@ -345,6 +345,15 @@ def execute_chain():
     if len(sp) > 0:
         device_dict[sp].executeChain()
     return ('', 204)
+@app.route('/halt')
+def halt():
+    global device_dict, current_user,current_user_id
+    sp = request.args['serial_port']
+    print("halting chain")
+    if len(sp) > 0:
+        device_dict[sp].haltExec()
+        device_dict[sp].resetChain()
+    return ('', 204)
 
 @app.route('/advProtocol')
 def advProtocol():

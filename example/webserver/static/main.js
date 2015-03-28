@@ -48,6 +48,18 @@ $( "#dispense_btn" ).click(function( event ) {
 
     event.preventDefault();
 });
+$( "#stop_exec" ).click(function( event ) {
+
+    var serport = $( "#serial_port").val() || '';
+        $.get('halt',
+              {
+               'serial_port': serport
+               
+                }
+            );
+    
+    event.preventDefault();
+});
 
 $( "#submitProtocol" ).click(function( event ) {
 
