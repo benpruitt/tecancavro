@@ -477,7 +477,7 @@ def constant_flow(from_port_id, to_port_id, final_port_id,flowrate_ul_s, actual_
             time_for_task = volume_ul / actual_rate_ul_s + (2 * SPEED_CODES_STROKE[EXTRACT_SPEED])
             next_dt = datetime_execute + datetime.timedelta(0,time_for_task)
             print(final_port_id)
-            performtask.apply_async(args =[9, int(final_port_id), actual_rate_ul_s, PUMP_VOLUME_UL, serial_port, 1], eta = next_dt)
+            performtask.apply_async(args =[9, int(final_port_id), actual_rate_ul_s, PUMP_VOLUME_UL, serial_port, EXTRACT_SPEED], eta = next_dt)
 
     else:
         volume_remaining = volume_ul
@@ -491,7 +491,7 @@ def constant_flow(from_port_id, to_port_id, final_port_id,flowrate_ul_s, actual_
                 next_dt = next_dt + datetime.timedelta(0,time_for_task)
                 print(final_port_id)
                 if(final_port_id != 0):
-                    performtask.apply_async(args =[9, int(final_port_id), actual_rate_ul_s, PUMP_VOLUME_UL, serial_port, 1], eta = next_dt)
+                    performtask.apply_async(args =[9, int(final_port_id), actual_rate_ul_s, PUMP_VOLUME_UL, serial_port, EXTRACT_SPEED], eta = next_dt)
                     time_for_task = (4 * SPEED_CODES_STROKE[EXTRACT_SPEED])
                     next_dt = next_dt + datetime.timedelta(0,time_for_task)
             else:
@@ -501,7 +501,7 @@ def constant_flow(from_port_id, to_port_id, final_port_id,flowrate_ul_s, actual_
                 next_dt = next_dt + datetime.timedelta(0,time_for_task)
                 print(final_port_id)
                 if(final_port_id != 0):
-                    performtask.apply_async(args =[9, int(final_port_id), actual_rate_ul_s, PUMP_VOLUME_UL, serial_port, 1], eta = next_dt)
+                    performtask.apply_async(args =[9, int(final_port_id), actual_rate_ul_s, PUMP_VOLUME_UL, serial_port, EXTRACT_SPEED], eta = next_dt)
                     
 
 
@@ -516,8 +516,12 @@ def performtask(from_id, to_id, rate_ul_s, vol_ul,sp,speed_to_use):
     global device_dict, current_user,current_user_id
 
     if len(sp) > 0:
+        device_dict[sp].resetChain()
+        print(vol_ul)
         device_dict[sp].extract(int(from_id), int(vol_ul), speed = EXTRACT_SPEED)
+        print(vol_ul)
         device_dict[sp].dispense(int(to_id), int(vol_ul), speed = speed_to_use)
+        print(vol_ul)
         device_dict[sp].executeChain()
 
     print("Performing Task")
