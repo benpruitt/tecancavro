@@ -476,7 +476,7 @@ def constant_flow(from_port_id, to_port_id, final_port_id,flowrate_ul_s, actual_
         if(final_port_id != 0):
             time_for_task = volume_ul / actual_rate_ul_s + (2 * SPEED_CODES_STROKE[EXTRACT_SPEED])
             next_dt = datetime_execute + datetime.timedelta(0,time_for_task)
-            rint(final_port_id)
+            print(final_port_id)
             performtask.apply_async(args =[9, int(final_port_id), actual_rate_ul_s, PUMP_VOLUME_UL, serial_port, 1], eta = next_dt)
 
     else:
