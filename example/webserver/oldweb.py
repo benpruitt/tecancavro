@@ -9,17 +9,15 @@ from celery import Celery
 import hashlib
 import uuid
 import json
-import time
 #from passlib.apps import custom_app_context as pwd_context
 import datetime
 from werkzeug.security import generate_password_hash, \
      check_password_hash
 import pytz
 from pytz import timezone
-import requests
  
 PUMP_VOLUME_UL = 5000.0
-EXTRACT_SPEED = 17
+EXTRACT_SPEED = 15
 
 class User(object):
 
@@ -60,6 +58,9 @@ app.config['CELERY_RESULT_BACKEND'] = 'redis://localhost:6379/0'
 celery = Celery(app.name, broker=app.config['CELERY_BROKER_URL'])
 celery.conf.update(app.config)
 
+@celery.task
+def testFunc():
+    print("TESTTESTESTESTETS")
 
 current_user = None
 current_user_id = None
@@ -75,7 +76,7 @@ app.jinja_env.lstrip_blocks = True
 #salt = uuid.uuid4().hex
 #hashed_password = hashlib.sha512(password + salt).hexdigest()
 
-paused = False
+
 
 
 try:
@@ -111,6 +112,10 @@ def _rateToSpeed(rate_ul_s):
             if(abs(SPEED_CODES_STROKE[item] - target_sec_per_stroke) < abs(SPEED_CODES_STROKE[closest_ind] - target_sec_per_stroke)):
                 closest_ind = item
                 closest_val = SPEED_CODES_STROKE[item]
+        print("Target:")
+        print(target_sec_per_stroke)
+        print("ACtual:")
+        print(closest_val)
         return closest_ind
 
 
@@ -125,7 +130,6 @@ def getSerialPumps():
 devices = getSerialPumps()
 device_dict = dict(devices)
 for item in devices:
-
     device_dict[item[0]].init()
     device_dict[item[0]].setSpeed(25)
     #device_dict[item[0]].primePort(1,500)
@@ -212,72 +216,69 @@ def Protocol():
 def AdvancedProtocol():
     global device_dict, current_user, devices,current_user_id
     if(current_user == None):
+
+        # the valve count is in the 2nd field of
+        # each item in devices e.g "9dist"
         valves=list(range(1,10))
         params = {}
         params['valves'] = valves
         params['devices'] = devices
         params['username'] = current_user
-        params['protocols'] = []
-       
         return render_template('Login.html', params=params)
     else:
+        
+        # the valve count is in the 2nd field of
+        # each item in devices e.g "9dist"
         valves=list(range(1,10))
         params = {}
         params['valves'] = valves
         params['username'] = current_user
         params['devices'] = devices
+        return render_template('AdvancedProtocol.html', params=params)
+
+@app.route('/AdvancedProtocol2')
+def AdvancedProtocol2():
+    global device_dict, current_user, devices,current_user_id
+    if(current_user == None):
+
+        # the valve count is in the 2nd field of
+        # each item in devices e.g "9dist"
+        valves=list(range(1,10))
+        params = {}
+        params['valves'] = valves
+        params['devices'] = devices
+        params['username'] = current_user
+        return render_template('Login.html', params=params)
+    else:
+        protocol = request.args['id']
+        print(protocol)
+        # the valve count is in the 2nd field of
+        # each item in devices e.g "9dist"
+        valves=list(range(1,10))
+        params = {}
+        params['valves'] = valves
+        params['username'] = current_user
+        params['devices'] = devices
+        conn = sqlite3.connect('Raspi.db')
+        c = conn.cursor()
+        protocolsnew = []
+        prots = c.execute("SELECT * FROM Protocols2 WHERE protocolID = ?", [protocol])
+        for row in prots:
+            print(row)
+            number = str(row[1])
+            rate = row[2]
+            vol = row[3]
+            fromid = row[4]
+            toid = row[5]
+            protocolsnew.append({"num":number,"rate":rate,"vol":vol, "fromid": fromid, "toid":toid})
+
+        params['protocols'] = protocolsnew
         
-        try:
-            protocol_id = request.args['id']
-            old_protocol = True
-        except:  # This is the correct syntax
-            old_protocol = False
-
-        if(not old_protocol):
-            params['len'] = 0
-            return render_template('AdvancedProtocol.html', params=params)
-        else:
-            params['len'] = 1
-            conn = sqlite3.connect('Raspi.db')
-            c = conn.cursor()
-            protocolsnew = []
-            prots = c.execute("SELECT * FROM Protocols WHERE id = ?", [protocol_id])
-            for row in prots:
-
-                number = str(row[1])
-                rate = row[2]
-                vol = row[3]
-                fromport = row[4]
-                toport = row[5]
-                hours = row[6]
-                minutes = row[7]
-                seconds = row[8]
-                cycle = row[9]
-                numrepeats = row[10]
-                protocolsnew.append({"num": number,
-                                     "rate": rate,
-                                     "vol": vol, 
-                                     "fromport": fromport, 
-                                     "toport": toport,
-                                     "hours": hours,
-                                     "minutes": minutes,
-                                     "seconds": seconds,
-                                     "cycles": cycle,
-                                     "numrepeats": numrepeats
-                                     })
-
-            params['protocols'] = protocolsnew
-            
-            
-
-            conn.commit()
-            conn.close()
-            return render_template('AdvancedProtocol.html', params=params)
-
-
-
-
         
+
+        conn.commit()
+        conn.close()
+        return render_template('AdvancedProtocol2.html', params=params)
 
 
 @app.route('/extract')
@@ -287,23 +288,27 @@ def extract_call():
     port = int(request.args['port'])
     sp = request.args['serial_port']
     rate = int(request.args['rate'])
+    #testFunc.apply_async(args=[msg],countdown = 15)
     if(rate != 0 and len(sp) > 0):
         newSpeed = _rateToSpeed(rate)
+        #device_dict[sp].setSpeed(newSpeed)
+        print("Speed Calc")
+        print(rate)
+        print(newSpeed)
 
-        
-
-
+    #print("here")
     willex = int(request.args['exec'])
     if(willex == 0):
         executing = False
     else:
         executing = True
         
+    print(executing)
     print("Received extract for: %d ul from port %d on serial port %s" % (volume,
           port, sp))
     if len(sp) > 0:
-        device_dict[sp].resetChain(on_execute=True, minimal_reset=False)
         device_dict[sp].extract(port, volume, speed = newSpeed, execute = executing)
+    # device_dict[sp].doSomething(val)
     return ('', 204)
 
 @app.route('/dispense')
@@ -315,7 +320,10 @@ def dispense_call():
     rate = int(request.args['rate'])
     if(rate != 0 and len(sp) > 0):
         newSpeed = _rateToSpeed(rate)
-        
+        #device_dict[sp].setSpeed(newSpeed)
+        print("Speed Calc")
+        print(rate)
+        print(newSpeed)
 
     willex = int(request.args['exec'])
     if(willex == 0):
@@ -326,42 +334,14 @@ def dispense_call():
     print("Received dispense for: %d ul from port %d on serial port %s" % (volume,
           port, sp))
     if len(sp) > 0:
-        device_dict[sp].resetChain(on_execute=True, minimal_reset=False)
         device_dict[sp].dispense(port, volume, speed = newSpeed, execute = executing)
-    return ('', 204)
-@app.route('/reset')
-def reset():
-    global device_dict, current_user,current_user_id
-    sp = request.args['serial_port']
-    if len(sp) > 0:
-        device_dict[sp].terminateExec()
-        device_dict[sp].resetChain()
-        device_dict[sp].init()
-    return ('', 204)
-
-@app.route('/pause')
-def pause():
-    global device_dict, current_user,current_user_id, paused
-    paused = True
-    sp = request.args['serial_port']
-    if len(sp) > 0:
-        device_dict[sp].terminateExec()
-    return ('', 204)
-
-@app.route('/resume')
-def resume():
-    global device_dict, current_user,current_user_id, paused
-    sp = request.args['serial_port']
-    
-    if len(sp) > 0 and paused:
-        device_dict[sp].executeChain()
-    paused = False
     return ('', 204)
 
 @app.route('/execute')
 def execute_chain():
     global device_dict, current_user,current_user_id
     sp = request.args['serial_port']
+    print("executing chain")
     if len(sp) > 0:
         device_dict[sp].executeChain()
     return ('', 204)
@@ -369,6 +349,7 @@ def execute_chain():
 def halt():
     global device_dict, current_user,current_user_id
     sp = request.args['serial_port']
+    print("halting chain")
     if len(sp) > 0:
         device_dict[sp].haltExec()
         device_dict[sp].resetChain()
@@ -381,115 +362,202 @@ def advProtocol():
     numitems = int(request.args['numitems'])
     fromports =  json.loads(request.args['fromports'])
     toports =  json.loads(request.args['toports'])
+    finalports =  json.loads(request.args['finals'])
+    datetimes = json.loads(request.args['datetimes'])
     flowrates =  json.loads(request.args['flowrates'])
     volumes =  json.loads(request.args['volumes'])
-    hours =  json.loads(request.args['hours'])
-    minutes =  json.loads(request.args['minutes'])
-    seconds =  json.loads(request.args['seconds'])
-    cycles =  json.loads(request.args['cycles'])
-    repeats =  json.loads(request.args['repeats'])
-    saveProtocol(True, sp, numitems, fromports, toports, flowrates, volumes, hours, minutes, seconds, cycles, repeats)
-    reset()
-    device_dict[sp].resetChain(on_execute=True, minimal_reset=False)
-    for i in range(0,numitems):
-        createTask(int(fromports[i]), int(toports[i]), float(flowrates[i]), float(volumes[i]), int(hours[i]), int(minutes[i]),int(seconds[i]), cycles[i], repeats[i], sp)
-    time_to_exec = device_dict[sp].executeChain()
-    print(time_to_exec)
-    return ('', 204)
-    
-
-def createTask(from_port_id, to_port_id, flowrate_ul_s, volume_ul, hour_num, min_num, sec_num, cycles, repeat_num, sp):
-    global device_dict, current_user,current_user_id
-    if(len(sp) > 0):
-        if(cycles != "End"):
-            if(cycles == "Start"):
-                device_dict[sp].markRepeatStart()
-            time_len = sec_num + 60*min_num + 3600*hour_num
-            if(flowrate_ul_s * time_len != volume_ul):
-                printf("ERROR, incorrect conversions")
-            speed_to_use = 0
-            if(flowrate_ul_s == 0 and volume_ul == 0):
-                delaytime = time_len*1000
-                MAX_DELAY = 30000
-                num_pause_cycles = int(delaytime/MAX_DELAY)
-                extra_delay = int(delaytime) % MAX_DELAY
-                if(num_pause_cycles > 0):
-                    device_dict[sp].markRepeatStart()
-                    device_dict[sp].delayExec(MAX_DELAY)
-                    device_dict[sp].repeatCmdSeq(num_pause_cycles)
-                device_dict[sp].delayExec(extra_delay)
-            elif(flowrate_ul_s != 0):
-                speed_to_use = _rateToSpeed(flowrate_ul_s)
-                actual_rate_ul_s = PUMP_VOLUME_UL / float(SPEED_CODES_STROKE[speed_to_use])
-                target_time_s = volume_ul / flowrate_ul_s
-                if(target_time_s != time_len):
-                    print("CONVERSION ERROR")
-                actual_time_s = volume_ul / actual_rate_ul_s
-                if(actual_time_s == target_time_s):
-                    volume_remaining = volume_ul
-                    
-                    while volume_remaining > 0:
-                        if volume_remaining >= PUMP_VOLUME_UL:
-                            device_dict[sp].extract(int(from_port_id), int(PUMP_VOLUME_UL), speed = EXTRACT_SPEED)
-                            device_dict[sp].dispense(int(to_port_id), int(PUMP_VOLUME_UL), speed = speed_to_use)
-                            volume_remaining = volume_remaining - PUMP_VOLUME_UL
-                        else:
-                            device_dict[sp].extract(int(from_port_id), int(volume_remaining), speed = EXTRACT_SPEED)
-                            device_dict[sp].dispense(int(to_port_id), int(volume_remaining), speed = speed_to_use)
-                            volume_remaining = 0
-                else:
-                    #NEED TO CHANGE TO MAKE ACTUAL
-                    print("NOT exact")
-                    volume_remaining = volume_ul
-                    
-                    while volume_remaining > 0:
-                        if volume_remaining >= PUMP_VOLUME_UL:
-                            device_dict[sp].extract(int(from_port_id), int(PUMP_VOLUME_UL), speed = EXTRACT_SPEED)
-                            device_dict[sp].dispense(int(to_port_id), int(PUMP_VOLUME_UL), speed = speed_to_use)
-                            volume_remaining = volume_remaining - PUMP_VOLUME_UL
-                        else:
-                            device_dict[sp].extract(int(from_port_id), int(volume_remaining), speed = EXTRACT_SPEED)
-                            device_dict[sp].dispense(int(to_port_id), int(volume_remaining), speed = speed_to_use)
-                            volume_remaining = 0
-
-                        
-            else:
-                return "ERROR"   
-        else:
-            device_dict[sp].repeatCmdSeq(int(repeat_num))
-
-
-@app.route('/saveProtocol')
-def saveProtocol(local_call = False, sp=None, numitems = None, fromports = None, toports = None, flowrates = None, volumes = None, hours = None, minutes = None, seconds = None, cycles = None, reoeats = None):
-    global device_dict, current_user,current_user_id
-    if(not local_call):
-        sp = request.args['serial_port']
-        numitems = int(request.args['numitems'])
-        fromports =  json.loads(request.args['fromports'])
-        toports =  json.loads(request.args['toports'])
-        flowrates =  json.loads(request.args['flowrates'])
-        volumes =  json.loads(request.args['volumes'])
-        hours =  json.loads(request.args['hours'])
-        minutes =  json.loads(request.args['minutes'])
-        seconds =  json.loads(request.args['seconds'])
-        cycles =  json.loads(request.args['cycles'])
-        repeats =  json.loads(request.args['repeats'])
-
     conn = sqlite3.connect('Raspi.db')
     c = conn.cursor()
     #change to make use unused numbers not max
-    c.execute("SELECT MAX(id) FROM Protocols")
+    c.execute("SELECT MAX(protocolID) FROM Protocols2")
     maxid = int(c.fetchone()[0])
     newid = maxid+1
+    print("Newid: %d", newid)
     for i in range(0,numitems):
-        items = [newid, (i+1), float(flowrates[i]), float(volumes[i]), int(fromports[i]),int(toports[i]),int(hours[i]),int(minutes[i]), int(seconds[i]),cycles[i],int(repeats[i])]
-        c.execute("INSERT INTO Protocols VALUES (?,?,?,?,?,?,?,?,?,?,?)", items)
+        items = [newid, (i+1), flowrates[i], volumes[i], fromports[i],toports[i],datetimes[i]]
+        c.execute("INSERT INTO Protocols2 VALUES (?,?,?,?,?,?,?)", items)
+        print("i")
 
-    
+    #get current user
+    curr_user = 1
+    import time
     ts = time.time()
     st = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
+
     items = [st, st, current_user_id, newid]
-    c.execute("INSERT INTO UserProtocols VALUES (?,?,?,?)", items)
+    print(st)
+    c.execute("INSERT INTO UserProtocols3 VALUES (?,?,?,?)", items)
+    print("Added")
+
+    conn.commit()
+    conn.close()
+    for i in range(0,numitems):
+        print(int(datetimes[i][0:4]))
+        print(int(datetimes[i][5:7]))
+        print(int(datetimes[i][8:10]))
+        print(int(datetimes[i][11:13]))
+        print(int(datetimes[i][14:16]))
+        print(int(datetimes[i][17:19]))
+        dt = datetime.datetime(int(datetimes[i][0:4]), int(datetimes[i][5:7]), int(datetimes[i][8:10]), int(datetimes[i][11:13]), int(datetimes[i][14:16]), int(datetimes[i][17:19]), 0)
+        print(dt)
+        eastern = timezone('US/Eastern')
+        dt = eastern.localize(dt)
+        createTask(int(fromports[i]), int(toports[i]), int(finalports[i]), float(flowrates[i]), float(volumes[i]), sp, dt)
+    return ('', 204)
+
+def createTask(from_port_id, to_port_id, final_port_id, flowrate_ul_s, volume_ul, serial_port, datetime_execute):
+    if(len(serial_port) >= 0):
+        speed_to_use = 0
+        if(flowrate_ul_s != 0):
+            speed_to_use = _rateToSpeed(flowrate_ul_s)
+        else:
+            return "ERROR"
+
+        actual_rate_ul_s = PUMP_VOLUME_UL / float(SPEED_CODES_STROKE[speed_to_use])
+        target_time_s = volume_ul / flowrate_ul_s
+        actual_time_s = volume_ul / actual_rate_ul_s
+        if(ALLOW_CONSTANT and target_time_s == actual_time_s and volume_ul <= PUMP_VOLUME_UL):
+            performtask.apply_async(args =[from_port_id, to_port_id, actual_rate_ul_s, volume_ul,serial_port,speed_to_use], eta = datetime_execute)
+        else:
+            if actual_time_s >= target_time_s:
+                print("hi")
+            if speed_to_use == 0:
+                error_message = "Could not complete with bounds specified, pump does not have a rate that is fast enough"
+                print(error_message)
+                return error_message
+            else:
+                speed_to_use = speed_to_use - 1
+                actual_rate_ul_s = PUMP_VOLUME_UL / float(SPEED_CODES_STROKE[speed_to_use])
+                actual_time_s = volume_ul / actual_rate_ul_s
+            print("her")
+            pulsatile_flowrate_options[OPTION_TO_USE](from_port_id, to_port_id,final_port_id, flowrate_ul_s, actual_rate_ul_s, actual_time_s, speed_to_use, target_time_s, volume_ul, serial_port, datetime_execute)
+
+def fixed_number_breaks(from_port_id, to_port_id, final_port_id,flowrate_ul_s, actual_rate_ul_s, actual_time_s, speed_to_use, target_time_s, volume_ul, serial_port, datetime_execute, numbreaks = 100):
+    time_to_makeup_s = target_time_s - actual_time_s
+    assert time_to_makeup_s > 0
+
+    time_per_break = time_to_makeup_s/numbreaks
+
+    ##ADD TIME TO SWITCH PORT
+    if(time_per_break < SPEED_CODES_STROKE[EXTRACT_SPEED]):
+        error_message = "Cannot complete with bounds specified, not enough time during breaks to refill"
+        print(error_message)
+        return error_message
+
+    time_per_execution = actual_time_s / numbreaks
+    volume_per_execution = time_per_execution * actual_rate_ul_s
+    breaks = [0]
+    executions = [time_per_break]
+    for i in range(0, numbreaks-1): # build arrays for start times of breaks and executions
+        breaks.append(executions[i] + time_per_execution)
+        executions.append(breaks[i+1] + time_per_break)
+
+def fixed_break_interval(from_port_id, to_port_id, final_port_id,flowrate_ul_s, actual_rate_ul_s, actual_time_s, speed_to_use, target_time_s, volume_ul, serial_port, datetime_execute, numbreaks = 100):
+    print("hi")
+def mimic_heartbeat(from_port_id, to_port_id, final_port_id,flowrate_ul_s, actual_rate_ul_s, actual_time_s, speed_to_use, target_time_s, volume_ul, serial_port, datetime_execute, numbreaks = 100):
+    print("hi")
+                      
+
+
+    # else:
+    #             volume_remaining = volume_ul
+    #             next_dt = datetime_execute
+    #             while volume_remaining > 0:
+    #                 if volume_remaining >= PUMP_VOLUME_UL:
+    #                     performtask.apply_async(args =[from_port_id, to_port_id, flowrate_ul_s, PUMP_VOLUME_UL, serial_port, speed_to_use], eta = next_dt)
+    #                     volume_remaining = volume_remaining - PUMP_VOLUME_UL
+    #                 else:
+    #                     performtask.apply_async(args =[from_port_id, to_port_id, flowrate_ul_s, volume_remaining, serial_port, speed_to_use], eta = next_dt)
+    #                     volume_remaining = 0
+
+def constant_flow(from_port_id, to_port_id, final_port_id,flowrate_ul_s, actual_rate_ul_s, actual_time_s, speed_to_use, target_time_s, volume_ul, serial_port, datetime_execute):
+    if(target_time_s == actual_time_s and volume_ul <= PUMP_VOLUME_UL):
+        performtask.apply_async(args =[from_port_id, to_port_id, actual_rate_ul_s, volume_ul,serial_port,speed_to_use], eta = datetime_execute)
+        if(final_port_id != 0):
+            time_for_task = volume_ul / actual_rate_ul_s + (2 * SPEED_CODES_STROKE[EXTRACT_SPEED])
+            next_dt = datetime_execute + datetime.timedelta(0,time_for_task)
+            print(final_port_id)
+            performtask.apply_async(args =[9, int(final_port_id), actual_rate_ul_s, PUMP_VOLUME_UL, serial_port, EXTRACT_SPEED], eta = next_dt)
+
+    else:
+        volume_remaining = volume_ul
+        next_dt = datetime_execute
+        while volume_remaining > 0:
+            print(next_dt)
+            if volume_remaining >= PUMP_VOLUME_UL:
+                performtask.apply_async(args =[from_port_id, to_port_id, actual_rate_ul_s, PUMP_VOLUME_UL, serial_port, speed_to_use], eta = next_dt)
+                volume_remaining = volume_remaining - PUMP_VOLUME_UL
+                time_for_task = PUMP_VOLUME_UL / flowrate_ul_s + (3 * SPEED_CODES_STROKE[EXTRACT_SPEED])
+                next_dt = next_dt + datetime.timedelta(0,time_for_task)
+                print(final_port_id)
+                if(final_port_id != 0):
+                    performtask.apply_async(args =[9, int(final_port_id), actual_rate_ul_s, PUMP_VOLUME_UL, serial_port, EXTRACT_SPEED], eta = next_dt)
+                    time_for_task = (4 * SPEED_CODES_STROKE[EXTRACT_SPEED])
+                    next_dt = next_dt + datetime.timedelta(0,time_for_task)
+            else:
+                performtask.apply_async(args =[from_port_id, to_port_id, actual_rate_ul_s, volume_remaining, serial_port, speed_to_use], eta = next_dt)
+                volume_remaining = 0
+                time_for_task = volume_remaining / flowrate_ul_s + (3 * SPEED_CODES_STROKE[EXTRACT_SPEED])
+                next_dt = next_dt + datetime.timedelta(0,time_for_task)
+                print(final_port_id)
+                if(final_port_id != 0):
+                    performtask.apply_async(args =[9, int(final_port_id), actual_rate_ul_s, PUMP_VOLUME_UL, serial_port, EXTRACT_SPEED], eta = next_dt)
+                    
+
+
+pulsatile_flowrate_options = {0 : fixed_number_breaks,
+                              1 : fixed_break_interval,
+                              2 : mimic_heartbeat,
+                              3 : constant_flow
+}
+    
+@celery.task
+def performtask(from_id, to_id, rate_ul_s, vol_ul,sp,speed_to_use):
+    global device_dict, current_user,current_user_id
+
+    if len(sp) > 0:
+        device_dict[sp].resetChain()
+        print(vol_ul)
+        device_dict[sp].extract(int(from_id), int(vol_ul), speed = EXTRACT_SPEED)
+        print(vol_ul)
+        device_dict[sp].dispense(int(to_id), int(vol_ul), speed = speed_to_use)
+        print(vol_ul)
+        device_dict[sp].executeChain()
+
+    print("Performing Task")
+
+@app.route('/saveProtocol')
+def saveProtocol():
+    global device_dict, current_user,current_user_id
+    sp = request.args['serial_port']
+    numitems = int(request.args['numitems'])
+    fromports =  json.loads(request.args['fromports'])
+    toports =  json.loads(request.args['toports'])
+    datetimes = json.loads(request.args['datetimes'])
+    flowrates =  json.loads(request.args['flowrates'])
+    volumes =  json.loads(request.args['volumes'])
+    conn = sqlite3.connect('Raspi.db')
+    c = conn.cursor()
+    #change to make use unused numbers not max
+    c.execute("SELECT MAX(protocolID) FROM Protocols2")
+    maxid = int(c.fetchone()[0])
+    newid = maxid+1
+    print("Newid: %d", newid)
+    for i in range(0,numitems):
+        items = [newid, (i+1), flowrates[i], volumes[i], fromports[i],toports[i],datetimes[i]]
+        c.execute("INSERT INTO Protocols2 VALUES (?,?,?,?,?,?,?)", items)
+        print("i")
+
+    #get current user
+    curr_user = 1
+    import time
+    ts = time.time()
+    st = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
+
+    items = [st, st, current_user_id, newid]
+    print(st)
+    c.execute("INSERT INTO UserProtocols3 VALUES (?,?,?,?)", items)
+    print("Added")
 
     conn.commit()
     conn.close()
@@ -520,7 +588,7 @@ def MyProtocols():
         protocols = []
         conn = sqlite3.connect('Raspi.db')
         c = conn.cursor()
-        prots = c.execute("SELECT * FROM UserProtocols WHERE user = ?", [current_user_id])
+        prots = c.execute("SELECT * FROM UserProtocols3 WHERE id = ?", [current_user_id])
         for row in prots:
             name = row[0]
             time = row[1]
@@ -529,6 +597,7 @@ def MyProtocols():
                                 'time': time, 'id': protocolNum})
 
         params['protocols'] = protocols
+        print(protocols)    
         
         
 
@@ -550,6 +619,7 @@ def Logout():
 
 @app.route('/Login')
 def Login():
+    print("HI")
     global device_dict, current_user, devices,current_user_id
     username = request.args["username"]
     password = request.args["password"]
@@ -557,6 +627,7 @@ def Login():
     c = conn.cursor()
     c.execute("SELECT * FROM Users2 WHERE username = ?",[username])
     if(check_password_hash(c.fetchone()[1], password)):
+        print("match")
         
         valves=list(range(1,10))
         params = {}
@@ -566,10 +637,11 @@ def Login():
         c.execute("SELECT rowID FROM Users2 WHERE username = ?",[username])
         current_user_id = c.fetchone()[0]
         current_user = username
+        print(current_user)
         params['username'] = current_user
         conn.commit()
         conn.close()
-        return MyProtocols()
+        return render_template('MyProtocols.html', params = params)
     else:
         print("Wrong Password")
         conn.commit()
@@ -621,11 +693,34 @@ def Register():
     c.execute("SELECT rowID FROM Users2 WHERE username = ?",[username])
     current_user_id = c.fetchone()[0]
     current_user = username
+    print("CURUSER:")
+    print(current_user)
     conn.commit()
     params['username'] = current_user
     conn.close()
     return render_template('MyProtocols.html', params = params)
 
+
+
+@app.route('/tables')
+def tables():
+    global devices,current_user_id
+    if(current_user == None):
+        params = {}
+        #params['valves'] = valves
+        #params['devices'] = devices
+        params['username'] = current_user
+        return render_template('Login.html', params=params)
+    else:
+
+        # the valve count is in the 2nd field of
+        # each item in devices e.g "9dist"
+        valves=list(range(1,10))
+        params = {}
+        params['valves'] = valves
+        params['devices'] = devices
+        params['username'] = current_user
+        return render_template('tables.html')
 
 if __name__ == '__main__':
     app.debug = True

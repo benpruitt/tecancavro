@@ -23,14 +23,36 @@ $(document).ready(function() {
     }
     event.preventDefault();
 });
+$( "#resetbutton" ).click(function( event ) {
+  var serport = $( "#serial_port").val() || '';
+  $.get('reset',
+              {'serial_port': serport
+              }
+            );
+  event.preventDefault();
+});
+$( "#pausebutton" ).click(function( event ) {
+  var serport = $( "#serial_port").val() || '';
+  $.get('pause',
+              {'serial_port': serport
+              }
+            );
+  event.preventDefault();
+});
+$( "#resumebutton" ).click(function( event ) {
+  var serport = $( "#serial_port").val() || '';
+  $.get('resume',
+              {'serial_port': serport
+              }
+            );
+  event.preventDefault();
+});
 
 $( "#dispense_btn" ).click(function( event ) {
-
     var volume = $( "#dispense_volume").val();
     var port = $("#port_number").val();
     var serport = $( "#serial_port").val() || '';
     var rate = $("#rate_box").val();
-    
     if ( volume > 0 && volume <= 5000) {
         $( "#debugfield" ).text( "Validated dispense command..." ).show();
         $.get('dispense',
@@ -48,96 +70,6 @@ $( "#dispense_btn" ).click(function( event ) {
 
     event.preventDefault();
 });
-$( "#stop_exec" ).click(function( event ) {
-
-    var serport = $( "#serial_port").val() || '';
-        $.get('halt',
-              {'serial_port': serport
-                }
-            );
-    
-    event.preventDefault();
-});
-
-$( "#submitProtocol" ).click(function( event ) {
-
-    var oTable = document.getElementById('protocolTable');
-
-    //gets rows of table
-    var rowLength = oTable.rows.length;
-
-    var volume;
-    var inport;
-    var outport;
-    var flowRate;
-    var time;
-    var serport = $( "#serial_port").val() || '';
-    $.get('clear_chain',
-              {'serial_port': serport
-                }
-            );
-
-
-    //loops through rows    
-    for (i = 1; i < rowLength; i++){
-
-       //gets cells of current row
-       var oCells = oTable.rows.item(i).cells;
-
-       //gets amount of cells of current row
-       var cellLength = oCells.length;
-
-       
-       /* var cellVal = oCells.item(j).innerHTML; */
-       str = oCells.item(3).innerHTML;
-       var numberPattern = /\d+/g;
-       var idnum = str.match( numberPattern )[1]
-       var idstr = "from" + idnum;
-       var inportId = document.getElementById(idstr);
-
-       inport = inportId.options[inportId.selectedIndex].value;
-       var idstr = "to" + idnum;
-       var inportId = document.getElementById(idstr);
-       outport = inportId.options[inportId.selectedIndex].value;
-    
-        var idstr = "vol" + idnum;
-        var volId = document.getElementById(idstr);
-        volume = volId.value
-
-        var idstr = "rate" + idnum;
-        var rateId = document.getElementById(idstr);
-        flowRate = rateId.value
-
-        var idstr = "time" + idnum;
-        var timeId = document.getElementById(idstr);
-        time = timeId.value
-        
-        $.get('extract',
-              {'volume': volume,
-               'port': inport,
-               'serial_port': serport,
-               'exec': 0,
-               'rate': flowRate
-                }
-            );
-        $.get('dispense',
-              {'volume': volume,
-               'port': outport,
-               'serial_port': serport,
-               'exec': 0,
-               'rate': flowRate
-                }
-            );
-
-    }
-    //send command to execute
-    $.get('execute',
-              {'serial_port': serport
-                }
-            );
-
-    event.preventDefault();
-});
 
 $( "#submitProtocolAdv" ).click(function( event ) {
 
@@ -146,10 +78,14 @@ $( "#submitProtocolAdv" ).click(function( event ) {
   var rowLength = oTable.rows.length;
   var fromports = [];
   var toports = [];
-  var datetimes = [];
+  var hours = [];
+  var minutes = [];
+  var seconds = [];
   var flowrates = [];
   var volumes = [];
-  var finals = [];
+  var cycles = [];
+  var repeats = [];
+
 
   for (i = 1; i < rowLength; i++){
       var oCells = oTable.rows.item(i).cells;
@@ -166,54 +102,48 @@ $( "#submitProtocolAdv" ).click(function( event ) {
       var inportId = document.getElementById(idstr);
       inport = inportId.options[inportId.selectedIndex].value;
       fromports[i-1] = inport;
+
       var idstr = "to" + idnum;
       var inportId = document.getElementById(idstr);
-       outport = inportId.options[inportId.selectedIndex].value;
-       toports[i-1] = outport;
+      outport = inportId.options[inportId.selectedIndex].value;
+      toports[i-1] = outport;
     
-        var idstr = "vol" + idnum;
-        var volId = document.getElementById(idstr);
-        volume = volId.value
-        volumes[i-1] = volume
+      var idstr = "vol" + idnum;
+      var volId = document.getElementById(idstr);
+      volume = volId.value
+      volumes[i-1] = volume
 
-        var idstr = "rate" + idnum;
-        var rateId = document.getElementById(idstr);
-        flowRate = rateId.value
-        flowrates[i-1] = flowRate;
+      var idstr = "rate" + idnum;
+      var rateId = document.getElementById(idstr);
+      flowRate = rateId.value
+      flowrates[i-1] = flowRate;
 
-        var idstr = "date" + idnum;
-        var dateId = document.getElementById(idstr);
-        date = dateId.value
-        var idstr = "final" + idnum;
-        var finalId = document.getElementById(idstr);
-        finals[i-1] = finalId.value
+      var idstr = "hours" + idnum;
+      var hoursId = document.getElementById(idstr);
+      hour = hoursId.value
+      hours[i-1] = hour;
 
-        var idstr = "time" + idnum;
-        var timeId = document.getElementById(idstr);
-        time = timeId.value
-        var datesplit = date.split("/");
-        var timesplit = time.split(" ");
-        var timedsplit = timesplit[0].split(":")
-        var hourI = parseInt(timedsplit[0])
-        var min = timedsplit[1]
-        var year = datesplit[2]
-        var day = datesplit[1]
-        var month = datesplit[0]
-        if(hourI == 12){
-          hourI = 0
-        }
+      var idstr = "minutes" + idnum;
+      var minId = document.getElementById(idstr);
+      minute = minId.value
+      minutes[i-1] = minute;
 
-        if (timesplit[1] === "PM")
-          hourI = hourI + 12
-        var hour = hourI.toString()
-        if(hourI <10)
-          hour = '0' + hour
-        if(min.length != 2)
-          min = "0" + min
-        var datetime = year + '-' + month + "-" + day + " " + hour + ":" + min +":00"
-       datetimes[i-1] = datetime
+      var idstr = "seconds" + idnum;
+      var secId = document.getElementById(idstr);
+      second = secId.value
+      seconds[i-1] = second;
 
-        var s = '2007-01-01 10:00:00'
+      var idstr = "cycles" + idnum;
+      var cyclesId = document.getElementById(idstr);
+      cycle = cyclesId.value
+      cycles[i-1] = cycle;
+
+      var idstr = "repeats" + idnum;
+      var repeatsId = document.getElementById(idstr);
+      repeat = repeatsId.value
+      repeats[i-1] = repeat;
+      
+      
 
   }
 
@@ -222,25 +152,33 @@ $( "#submitProtocolAdv" ).click(function( event ) {
                'fromports': JSON.stringify(fromports),
                'toports': JSON.stringify(toports),
                'serial_port': serport,
-               'datetimes': JSON.stringify(datetimes),
                'flowrates': JSON.stringify(flowrates),
                'volumes': JSON.stringify(volumes),
-               'finals': JSON.stringify(finals)
+               'hours': JSON.stringify(hours),
+               'minutes': JSON.stringify(minutes),
+               'seconds': JSON.stringify(seconds),
+               'cycles': JSON.stringify(cycles),
+               'repeats': JSON.stringify(repeats)
                 }
             );
+    
 
     event.preventDefault();
 });
 $( "#saveProtocol" ).click(function( event ) {
-
   var serport = $( "#serial_port").val() || '';
   var oTable = document.getElementById('protocolTable');
   var rowLength = oTable.rows.length;
   var fromports = [];
   var toports = [];
-  var datetimes = [];
+  var hours = [];
+  var minutes = [];
+  var seconds = [];
   var flowrates = [];
   var volumes = [];
+  var cycles = [];
+  var repeats = [];
+
 
   for (i = 1; i < rowLength; i++){
       var oCells = oTable.rows.item(i).cells;
@@ -254,56 +192,51 @@ $( "#saveProtocol" ).click(function( event ) {
       var idnum = str.match( numberPattern )[1]
 
       var idstr = "from" + idnum;
-
       var inportId = document.getElementById(idstr);
-           
       inport = inportId.options[inportId.selectedIndex].value;
       fromports[i-1] = inport;
+
       var idstr = "to" + idnum;
       var inportId = document.getElementById(idstr);
-       outport = inportId.options[inportId.selectedIndex].value;
-       toports[i-1] = outport;
+      outport = inportId.options[inportId.selectedIndex].value;
+      toports[i-1] = outport;
     
-        var idstr = "vol" + idnum;
-        var volId = document.getElementById(idstr);
-        volume = volId.value
-        volumes[i-1] = volume
+      var idstr = "vol" + idnum;
+      var volId = document.getElementById(idstr);
+      volume = volId.value
+      volumes[i-1] = volume
 
-        var idstr = "rate" + idnum;
-        var rateId = document.getElementById(idstr);
-        flowRate = rateId.value
-        flowrates[i-1] = flowRate;
+      var idstr = "rate" + idnum;
+      var rateId = document.getElementById(idstr);
+      flowRate = rateId.value
+      flowrates[i-1] = flowRate;
 
-        var idstr = "date" + idnum;
-        var dateId = document.getElementById(idstr);
-        date = dateId.value
+      var idstr = "hours" + idnum;
+      var hoursId = document.getElementById(idstr);
+      hour = hoursId.value
+      hours[i-1] = hour;
 
-        var idstr = "time" + idnum;
-        var timeId = document.getElementById(idstr);
-        time = timeId.value
-        var datesplit = date.split("/");
-        var timesplit = time.split(" ");
-        var timedsplit = timesplit[0].split(":")
-        var hourI = parseInt(timedsplit[0])
-        var min = timedsplit[1]
-        var year = datesplit[2]
-        var day = datesplit[1]
-        var month = datesplit[0]
-        if(hourI == 12){
-          hourI = 0
-        }
+      var idstr = "minutes" + idnum;
+      var minId = document.getElementById(idstr);
+      minute = minId.value
+      minutes[i-1] = minute;
 
-        if (timesplit[1] === "PM")
-          hourI = hourI + 12
-        var hour = hourI.toString()
-        if(hourI <10)
-          hour = '0' + hour
-        if(min.length != 2)
-          min = "0" + min
-        var datetime = year + '-' + month + "-" + day + " " + hour + ":" + min +":00"
-       datetimes[i-1] = datetime
+      var idstr = "seconds" + idnum;
+      var secId = document.getElementById(idstr);
+      second = secId.value
+      seconds[i-1] = second;
 
-        var s = '2007-01-01 10:00:00'
+      var idstr = "cycles" + idnum;
+      var cyclesId = document.getElementById(idstr);
+      cycle = cyclesId.value
+      cycles[i-1] = cycle;
+
+      var idstr = "repeats" + idnum;
+      var repeatsId = document.getElementById(idstr);
+      repeat = repeatsId.value
+      repeats[i-1] = repeat;
+      
+      
 
   }
 
@@ -312,26 +245,21 @@ $( "#saveProtocol" ).click(function( event ) {
                'fromports': JSON.stringify(fromports),
                'toports': JSON.stringify(toports),
                'serial_port': serport,
-               'datetimes': JSON.stringify(datetimes),
                'flowrates': JSON.stringify(flowrates),
-               'volumes': JSON.stringify(volumes)
+               'volumes': JSON.stringify(volumes),
+               'hours': JSON.stringify(hours),
+               'minutes': JSON.stringify(minutes),
+               'seconds': JSON.stringify(seconds),
+               'cycles': JSON.stringify(cycles),
+               'repeats': JSON.stringify(repeats)
                 }
             );
 
     event.preventDefault();
 });
 
-
-
-var oTable = document.getElementById('protocolTable');
-var rowLength = oTable.rows.length;
-protocolItems = rowLength;
-for (i = 1; i < rowLength; i++){
-  strdate = "#date" + i 
-  $(strdate).datepicker();
-  strtime = "#time" + i 
-  $(strtime).timepicker();
-}
+last_changed = "vol"
+second_to_last_changed = "rate"
 
 $( "#newrows" ).click(function( event ) {
     var oTable = document.getElementById('protocolTable');
@@ -348,25 +276,263 @@ $( "#newrows" ).click(function( event ) {
     var cell6 = row.insertCell(5);
     var cell7 = row.insertCell(6);
     var cell8 = row.insertCell(7);
+    var cell9 = row.insertCell(8);
+    var cell10 = row.insertCell(9);
 
     cell1.innerHTML = "<label>" + protocolItems + "</label>";
-    cell2.innerHTML = "<div class = 'col-lg-12'><select id = 'from" + protocolItems + "' class='form-control'><option value='1'>1</option><option value='2'>2</option><option value='3'>3</option><option value='4'>4</option><option value='5'>5</option><option value='6'>6</option><option value='7'>7</option><option value='8'>8</option><option value='9'>9</option></select></div>";
-    cell3.innerHTML = "<div class = 'col-lg-12'><select id = 'to" + protocolItems + "' class='form-control'><option value='1'>1</option><option value='2'>2</option><option value='3'>3</option><option value='4'>4</option><option value='5'>5</option><option value='6'>6</option><option value='7'>7</option><option value='8'>8</option><option value='9' selected>9</option></select></div>";
-    cell4.innerHTML = "<div class = 'col-lg-12'><select id = 'final" + protocolItems + "' class='form-control'><option value='0' selected>0</option><option value='1'>1</option><option value='2'>2</option><option value='3'>3</option><option value='4'>4</option><option value='5'>5</option><option value='6'>6</option><option value='7'>7</option><option value='8'>8</option><option value='9' >9</option></select></div>";
-
-    cell5.innerHTML = "<div  class = 'col-lg-8'><div class='form-group'><p><input type='text' id='date" + protocolItems+"'></p></div>"
-    cell6.innerHTML = "<div  class = 'col-lg-8'><div class='form-group'><div class='input-append bootstrap-timepicker'><input id='time" + protocolItems+"' type='text' class='input-small'><span class='add-on'><i class='icon-time'></i></span></div></div></div>"
-    cell7.innerHTML = "<div class = 'col-lg-8'><div class='form-group'><input id = 'rate" + protocolItems + "' class='form-control' placeholder='ul/sec'></div></div>";
-    cell8.innerHTML = "<div class = 'col-lg-8'><div class='form-group'><input id = 'vol" + protocolItems + "' class='form-control' placeholder='ul'></div></div>"
-
-    strdate = "#date" + protocolItems 
-    $(strdate).datepicker();
-    strtime = "#time" + protocolItems 
-    $(strtime).timepicker();
+    cell2.innerHTML = "<div class = 'col-lg-16'><select id = 'from" + protocolItems + "' class='form-control'><option value='1'>1</option><option value='2'>2</option><option value='3'>3</option><option value='4'>4</option><option value='5'>5</option><option value='6'>6</option><option value='7'>7</option><option value='8'>8</option><option value='9'>9</option></select></div>";
+    cell3.innerHTML = "<div class = 'col-lg-16'><select id = 'to" + protocolItems + "' class='form-control'><option value='1'>1</option><option value='2'>2</option><option value='3'>3</option><option value='4'>4</option><option value='5'>5</option><option value='6'>6</option><option value='7'>7</option><option value='8'>8</option><option value='9' selected>9</option></select></div>";
+    cell4.innerHTML = "<div class = 'col-lg-16'><div class='form-group'><input id = 'hours" + protocolItems + "' class='form-control' value = '0'></div></div>";
+    cell5.innerHTML = "<div class = 'col-lg-16'><div class='form-group'><input id = 'minutes" + protocolItems + "' class='form-control' value='0'></div></div>";
+    cell6.innerHTML = "<div class = 'col-lg-16'><div class='form-group'><input id = 'seconds" + protocolItems + "' class='form-control' value='0'></div></div>";
+    cell7.innerHTML = "<div class = 'col-lg-16'><div class='form-group'><input id = 'rate" + protocolItems + "' class='form-control' value='0' placeholder='ul/sec'></div></div>";
+    cell8.innerHTML = "<div class = 'col-lg-16'><div class='form-group'><input id = 'vol" + protocolItems + "' class='form-control' value ='0' placeholder='ul'></div></div>"
+    cell9.innerHTML = "<div class = 'col-lg-16'><select id = 'cycles" + protocolItems +"' class='form-control'><option value='na' selected>---</option><option value='Start'>Start</option><option value='End'>End</option></select> </div>";
+    cell10.innerHTML = "<div class = 'col-lg-16'><div class='form-group'><input id = 'repeats" + protocolItems + "' class='form-control' placeholder='e.g. 5' value='0'></div></div>"
+         
+                                       
+                                       
     
+    dynamicChanges(protocolItems)
 
 
     event.preventDefault();
 });
+
+
+function dynamicChanges(id_num){
+
+  var hours_id = "#hours" + id_num
+  var mins_id = "#minutes" + id_num
+  var secs_id = "#seconds" + id_num
+  var rate_id = "#rate" + id_num
+  var vol_id = "#vol" + id_num
+
+  $(hours_id).keyup(function(){
+    hours_selected = $(hours_id).val()
+    mins_selected = $(mins_id).val()
+    secs_selected = $(secs_id).val()
+    rate_selected = $(rate_id).val()
+    vol_selected = $(vol_id).val()
+
+    hours_val = parseInt(hours_selected)
+    if(hours_selected == "")
+      hours_val = 0
+    mins_val = parseInt(mins_selected)
+    if(mins_selected == "")
+      mins_val = 0
+    secs_val = parseInt(secs_selected)
+    if(secs_selected == "")
+      secs_val = 0
+
+    time = hours_val*3600 + mins_val*60 + secs_val
+
+    vol = parseInt(vol_selected)
+    if(vol_selected == "")
+      vol = 0
+    rate = parseInt(rate_selected)
+    if(rate_selected == "")
+      rate = 0
+    
+    
+
+
+    if(last_changed != "rate" && second_to_last_changed != "rate" && time != 0){
+      rate = parseFloat(vol)/parseFloat(time)
+      $(rate_id).val(rate)
+    }
+    else{
+      vol = parseFloat(rate)*parseFloat(time)
+      $(vol_id).val(vol)
+    }
+
+    if(last_changed != "time"){
+      hold = last_changed
+      last_changed = "time"
+      second_to_last_changed = hold
+    }
+    
+  });
+  $(mins_id).keyup(function(){
+    hours_selected = $(hours_id).val()
+    mins_selected = $(mins_id).val()
+    secs_selected = $(secs_id).val()
+    rate_selected = $(rate_id).val()
+    vol_selected = $(vol_id).val()
+    hours_val = parseInt(hours_selected)
+    if(hours_selected == "")
+      hours_val = 0
+    mins_val = parseInt(mins_selected)
+    if(mins_selected == "")
+      mins_val = 0
+    secs_val = parseInt(secs_selected)
+    if(secs_selected == "")
+      secs_val = 0
+
+    time = hours_val*3600 + mins_val*60 + secs_val
+    
+    vol = parseInt(vol_selected)
+    if(vol_selected == "")
+      vol = 0
+    rate = parseInt(rate_selected)
+    if(rate_selected == "")
+      rate = 0
+    
+    if(last_changed != "rate" && second_to_last_changed != "rate" && time != 0){
+      rate = parseFloat(vol)/parseFloat(time)
+      $(rate_id).val(rate)
+    }
+    else{
+      vol = parseFloat(rate)*parseFloat(time)
+      $(vol_id).val(vol)
+    }
+
+    if(last_changed != "time"){
+      hold = last_changed
+      last_changed = "time"
+      second_to_last_changed = hold
+    }
+  });
+  $(secs_id).keyup(function(){
+    hours_selected = $(hours_id).val()
+    mins_selected = $(mins_id).val()
+    secs_selected = $(secs_id).val()
+    rate_selected = $(rate_id).val()
+    vol_selected = $(vol_id).val()
+    hours_val = parseInt(hours_selected)
+    if(hours_selected == "")
+      hours_val = 0
+    mins_val = parseInt(mins_selected)
+    if(mins_selected == "")
+      mins_val = 0
+    secs_val = parseInt(secs_selected)
+    if(secs_selected == "")
+      secs_val = 0
+
+    time = hours_val*3600 + mins_val*60 + secs_val
+    
+    vol = parseInt(vol_selected)
+    if(vol_selected == "")
+      vol = 0
+    rate = parseInt(rate_selected)
+    if(rate_selected == "")
+      rate = 0
+    
+    if(last_changed != "rate" && second_to_last_changed != "rate" && time != 0){
+      rate = parseFloat(vol)/parseFloat(time)
+      $(rate_id).val(rate)
+    }
+    else{
+      vol = parseFloat(rate)*parseFloat(time)
+      $(vol_id).val(vol)
+    }
+
+    if(last_changed != "time"){
+      hold = last_changed
+      last_changed = "time"
+      second_to_last_changed = hold
+    }
+
+  });
+  $(rate_id).keyup(function(){
+    hours_selected = $(hours_id).val()
+    mins_selected = $(mins_id).val()
+    secs_selected = $(secs_id).val()
+    rate_selected = $(rate_id).val()
+    vol_selected = $(vol_id).val()
+    hours_val = parseInt(hours_selected)
+    if(hours_selected == "")
+      hours_val = 0
+    mins_val = parseInt(mins_selected)
+    if(mins_selected == "")
+      mins_val = 0
+    secs_val = parseInt(secs_selected)
+    if(secs_selected == "")
+      secs_val = 0
+
+    time = hours_val*3600 + mins_val*60 + secs_val
+    
+    vol = parseInt(vol_selected)
+    if(vol_selected == "")
+      vol = 0
+    rate = parseInt(rate_selected)
+    if(rate_selected == "")
+      rate = 0
+
+    if(last_changed != "time" && second_to_last_changed != "time" && vol != 0){
+      time = parseFloat(vol)/parseFloat(rate)
+      
+      hours_amt = parseInt(parseInt(time)/3600)
+      minutes_amt = parseInt((parseInt(time) % 3600)/60)
+      secs_amt = parseInt(time) % 60
+
+      $(hours_id).val(hours_amt)
+      $(mins_id).val(minutes_amt)
+      $(secs_id).val(secs_amt)
+    }
+    else{
+      vol = parseFloat(rate)*parseFloat(time)
+      $(vol_id).val(vol)
+    }
+
+
+    if(last_changed != "rate"){
+      hold = last_changed
+      last_changed = "rate"
+      second_to_last_changed = hold
+    }
+    
+  });
+  $(vol_id).keyup(function(){
+    hours_selected = $(hours_id).val()
+    mins_selected = $(mins_id).val()
+    secs_selected = $(secs_id).val()
+    rate_selected = $(rate_id).val()
+    vol_selected = $(vol_id).val()
+    hours_val = parseInt(hours_selected)
+    if(hours_selected == "")
+      hours_val = 0
+    mins_val = parseInt(mins_selected)
+    if(mins_selected == "")
+      mins_val = 0
+    secs_val = parseInt(secs_selected)
+    if(secs_selected == "")
+      secs_val = 0
+
+    time = hours_val*3600 + mins_val*60 + secs_val
+    
+    vol = parseInt(vol_selected)
+    if(vol_selected == "")
+      vol = 0
+    rate = parseInt(rate_selected)
+    if(rate_selected == "")
+      rate = 0
+    if(last_changed != "time" && second_to_last_changed != "time" && vol != 0){
+      time = parseFloat(vol)/parseFloat(rate)
+      
+      hours_amt = parseInt(parseInt(time)/3600)
+      minutes_amt = parseInt((parseInt(time) % 3600)/60)
+      secs_amt = parseInt(time) % 60
+
+      $(hours_id).val(hours_amt)
+      $(mins_id).val(minutes_amt)
+      $(secs_id).val(secs_amt)
+    }
+    else if(time != 0){
+      rate = parseFloat(vol)/parseFloat(time)
+      $(rate_id).val(rate)
+    }
+
+    if(last_changed != "vol"){
+      hold = last_changed
+      last_changed = "vol"
+      second_to_last_changed = hold
+    }
+    
+  });
+
+}
+dynamicChanges(1)
+
 
 });

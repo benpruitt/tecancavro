@@ -77,6 +77,7 @@ class XCaliburD(Syringe):
                 [default] - '' (cwd)
 
         """
+        
         super(XCaliburD, self).__init__(com_link)
         self.num_ports = num_ports
         self.syringe_ul = syringe_ul
@@ -97,7 +98,7 @@ class XCaliburD(Syringe):
         self.debug = debug
         if self.debug:
             self.initDebugLogging(debug_log_path)
-
+        self.terminateExec()
         self.setMicrostep(on=microstep)
 
         # Command chaining state information
@@ -285,7 +286,7 @@ class XCaliburD(Syringe):
         tic = time.time()
         self.sendRcv(self.cmd_chain, execute=True)
         exec_time = self.exec_time
-        self.resetChain(on_execute=True, minimal_reset=minimal_reset)
+        #self.resetChain(on_execute=True, minimal_reset=minimal_reset)
         toc = time.time()
         wait_time = exec_time - (toc-tic)
         if wait_time < 0:
@@ -594,11 +595,19 @@ class XCaliburD(Syringe):
         """ Delays command execution for `delay` milliseconds """
         self.logCall('delayExec', locals())
 
-        if not 0 < delay_ms < 30000:
-            raise(ValueError('`delay` [{0}] must be between 0 and 40000 ms'
+        if not 0 < delay_ms <= 30000:
+            raise(ValueError('`delay` [{0}] must be between 0 and 30000 ms'
                              ''.format(delay_ms)))
         cmd_string = 'M{0}'.format(delay_ms)
         self.cmd_chain += cmd_string
+    @execWrap
+    def terminateExec(self):
+        """ Terminates Execution """
+        self.logCall('terminateExec', locals())
+
+        
+        cmd_string = 'T'
+        return self.sendRcv(cmd_string)
 
     @execWrap
     def haltExec(self, input_pin=0):
