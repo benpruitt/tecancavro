@@ -23,6 +23,9 @@ $(document).ready(function() {
     }
     event.preventDefault();
 });
+
+$('#rate1').selectize();
+
 $( "#resetbutton" ).click(function( event ) {
   var serport = $( "#serial_port").val() || '';
   $.get('reset',
@@ -284,15 +287,15 @@ $( "#newrows" ).click(function( event ) {
     cell3.innerHTML = "<div class = 'col-lg-16'><select id = 'to" + protocolItems + "' class='form-control'><option value='1'>1</option><option value='2'>2</option><option value='3'>3</option><option value='4'>4</option><option value='5'>5</option><option value='6'>6</option><option value='7'>7</option><option value='8'>8</option><option value='9' selected>9</option></select></div>";
     cell4.innerHTML = "<div class = 'col-lg-16'><div class='form-group'><input id = 'hours" + protocolItems + "' class='form-control' value = '0'></div></div>";
     cell5.innerHTML = "<div class = 'col-lg-16'><div class='form-group'><input id = 'minutes" + protocolItems + "' class='form-control' value='0'></div></div>";
-    cell6.innerHTML = "<div class = 'col-lg-16'><div class='form-group'><input id = 'seconds" + protocolItems + "' class='form-control' value='0'></div></div>";
-    cell7.innerHTML = "<div class = 'col-lg-16'><div class='form-group'><input id = 'rate" + protocolItems + "' class='form-control' value='0' placeholder='ul/sec'></div></div>";
+    cell6.innerHTML = "<div class = 'col-lg-16'><div class='form-group'><input id = 'seconds" + protocolItems + "' class='form-control' value='0'></div></div>"
+    cell7.innerHTML = "<div class = 'col-lg-16'><div class='form-group'><div class='sandbox'><select id = 'rate" + protocolItems + "' class='demo-default' placeholder='ul/sec'><option value='0'>0</option><option value='8.333333333'>8.333333333</option><option value='10'>10</option><option value='11.66670556'>11.66670556</option><option value='13.33333333'>13.33333333</option><option value='15.00015'>15.00015</option><option value='16.66666667'>16.66666667</option><option value='25'>25</option><option value='33.33333333'>33.33333333</option><option value='41.66666667'>41.66666667</option><option value='50'>50</option><option value='66.66666667'>66.66666667</option><option value='74.99625019'>74.99625019</option><option value='83.33333333'>83.33333333</option><option value='91.65902841'>91.65902841</option><option value='100'>100</option><option value='108.3423619'>108.3423619</option><option value='116.6588894'>116.6588894</option><option value='125'>125</option><option value='133.3333333'>133.3333333</option><option value='141.6831964'>141.6831964</option><option value='150.0150015'>150.0150015</option><option value='158.3280557'>158.3280557</option><option value='166.6666667'>166.6666667</option><option value='333.3333333'>333.3333333</option><option value='666.6666667'>666.6666667</option><option value='833.3333333'>833.3333333</option><option value='1000'>1000</option><option value='1162.790698'>1162.790698</option><option value='1326.259947'>1326.259947</option><option value='1488.095238'>1488.095238</option><option value='1650.165017'>1650.165017</option><option value='1805.054152'>1805.054152</option><option value='2109.704641'>2109.704641</option><option value='2538.071066'>2538.071066</option><option value='2923.976608'>2923.976608</option><option value='3289.473684'>3289.473684</option><option value='3597.122302'>3597.122302</option><option value='3846.153846'>3846.153846</option></select></div></div></div>";
     cell8.innerHTML = "<div class = 'col-lg-16'><div class='form-group'><input id = 'vol" + protocolItems + "' class='form-control' value ='0' placeholder='ul'></div></div>"
     cell9.innerHTML = "<div class = 'col-lg-16'><select id = 'cycles" + protocolItems +"' class='form-control'><option value='na' selected>---</option><option value='Start'>Start</option><option value='End'>End</option></select> </div>";
     cell10.innerHTML = "<div class = 'col-lg-16'><div class='form-group'><input id = 'repeats" + protocolItems + "' class='form-control' placeholder='e.g. 5' value='0'></div></div>"
          
+    tosel = '#rate' + protocolItems;                                    
                                        
-                                       
-    
+    $(tosel).selectize();
     dynamicChanges(protocolItems)
 
 

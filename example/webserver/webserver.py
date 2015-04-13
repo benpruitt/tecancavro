@@ -10,13 +10,14 @@ import hashlib
 import uuid
 import json
 import time
+import numpy as np
 #from passlib.apps import custom_app_context as pwd_context
 import datetime
 from werkzeug.security import generate_password_hash, \
      check_password_hash
 import pytz
 from pytz import timezone
-import requests
+
  
 PUMP_VOLUME_UL = 5000.0
 EXTRACT_SPEED = 17
@@ -128,30 +129,6 @@ for item in devices:
 
     device_dict[item[0]].init()
     device_dict[item[0]].setSpeed(25)
-    #device_dict[item[0]].primePort(1,500)
-    #device_dict[item[0]].primePort(2,500)
-    #device_dict[item[0]].primePort(3,500)
-    #device_dict[item[0]].primePort(4,500)
-    #device_dict[item[0]].primePort(6,500)
-    #device_dict[item[0]].primePort(7,500)
-    #device_dict[item[0]].primePort(8,500)
-
-#def get_resource_as_string(name, charset='utf-8'):
- #   with app.open_resource(name) as f:
-  #      return f.read().decode(charset)
-
-#url_for('static', filename='js/jquery.js')
-#url_for('static', filename='js/bootstrap.min.js')
-#url_for('static', filename='js/plugins/morris/raphael.min.js')
-#url_for('static', filename='js/plugins/morris/morris.min.js')
-#url_for('static', filename='js/plugins/morris/morris-data.js')
-
-
-
-#app.jinja_env.globals['get_resource_as_string'] = get_resource_as_string
-
-
-
 
 ###############################################################################
 # Error handlers
@@ -389,6 +366,55 @@ def advProtocol():
     cycles =  json.loads(request.args['cycles'])
     repeats =  json.loads(request.args['repeats'])
     saveProtocol(True, sp, numitems, fromports, toports, flowrates, volumes, hours, minutes, seconds, cycles, repeats)
+    
+    # loop_array = np.zeros(numitems)
+    # break_array = np.zeros(numitems)
+    # loops_to_break = np.zeros(numitems)
+    # loops_lens = np.zeros(numitems)
+    # break_lens = np.zeros(numitems)
+    # for i in range(0, numitems):
+    #     time_len = int(seconds[i]) + 60*int(minutes[i]) + 3600*int(hours[i])
+    #     if(volumes[i] == 0 and time_len > 5*60):
+    #         break_array[i] = 1
+    #     if(cycles[i] == "Start"):
+    #         loop_array[i] = 1
+    #     if(cycles[i] == "End"):
+    #         loop_array[i] = 2
+    # last_start = -1
+    # first_end = -1
+    # breakcount = -1
+    # while(True):
+    #     for i in range(0, numitems):
+    #         if(loop_array[i] == 1):
+    #             last_start = i;
+    #             breakcount = 0;
+    #         if(loop_array[i] == 2):
+    #             loops_lens[last_start] = i - last_start + 1
+    #             if(breakcount > 0):
+    #                 loops_to_break[last_start] = 1
+    #             else:
+    #                 loop_array[last_start] = 0
+    #                 loop_array[i] = 0;
+    #             break;
+    #         if(break_array[i] == 1):
+    #             breakcount = breakcount + 1
+
+    #     if(last_start == -1):
+    #         break;
+    # start = 0
+    # for i in range(0, numitems):
+    #     if(break_array[i] == 1):
+    #         break_lens[start] = i - start + 1
+
+    # for i in range(0, numitems):
+    #     if(cycles[i] == "Start"):
+            
+    #     else if(cycles[i] == "End"):
+            
+    #     else
+
+
+
     reset()
     device_dict[sp].resetChain(on_execute=True, minimal_reset=False)
     for i in range(0,numitems):

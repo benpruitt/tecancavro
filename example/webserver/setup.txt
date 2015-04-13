@@ -4,6 +4,7 @@ Run in terminal in webserver directory:
 rm -rf venv
 virtualenv venv
 source venv/bin/activate
+pip install --upgrade pip
 pip install flask
 pip install Flask-Mail
 pip install amqp
@@ -11,6 +12,7 @@ pip install anyjson
 pip install billiard
 pip install celery
 pip install passlib
+pip install requests
 pip install pyserial
 wget http://redis.googlecode.com/files/redis-2.6.4.tar.gz
 tar xzf redis-2.6.4.tar.gz

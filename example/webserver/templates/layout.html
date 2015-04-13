@@ -40,6 +40,8 @@
         <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='timepicker/css/bootstrap-timepicker.min.css') }}">
        <!--<script type="text/javascript" src="{{ url_for('static', filename='timepicker/js/bootstrap-timepicker.min.js') }}"></script> -->
        <script type="text/javascript" src="{{ url_for('static', filename='timepicker/js/bootstrap-timepicker.js') }}"></script>
+       <script type="text/javascript" src="{{ url_for('static', filename='selectize/dist/js/standalone/selectize.js') }}"></script>
+       <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='selectize/dist/css/selectize.css') }}">
 
         <script>
         $(function() {
@@ -109,7 +111,7 @@
         </nav>
         {% block content %}
         {% endblock %}
-
+<br><br>
     </div>
     <!-- /#wrapper -->
 
