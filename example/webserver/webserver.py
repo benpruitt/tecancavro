@@ -20,7 +20,7 @@ from pytz import timezone
 
  
 PUMP_VOLUME_UL = 5000.0
-EXTRACT_SPEED = 17
+EXTRACT_SPEED = 22
 
 class User(object):
 
@@ -486,7 +486,7 @@ def createTask(from_port_id, to_port_id, flowrate_ul_s, volume_ul, hour_num, min
 
 
 @app.route('/saveProtocol')
-def saveProtocol(local_call = False, sp=None, numitems = None, fromports = None, toports = None, flowrates = None, volumes = None, hours = None, minutes = None, seconds = None, cycles = None, reoeats = None):
+def saveProtocol(local_call = False, sp=None, numitems = None, fromports = None, toports = None, flowrates = None, volumes = None, hours = None, minutes = None, seconds = None, cycles = None, repeats = None):
     global device_dict, current_user,current_user_id
     if(not local_call):
         sp = request.args['serial_port']
