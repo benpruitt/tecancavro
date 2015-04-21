@@ -1,0 +1,34 @@
+Setup:
+Run in terminal in webserver directory: 
+
+rm -rf venv
+virtualenv venv
+source venv/bin/activate
+pip install --upgrade pip
+pip install flask
+pip install Flask-Mail
+pip install amqp
+pip install anyjson
+pip install billiard
+pip install celery
+pip install passlib
+pip install requests
+pip install pyserial
+wget http://redis.googlecode.com/files/redis-2.6.4.tar.gz
+tar xzf redis-2.6.4.tar.gz
+cd redis-2.6.4
+make
+cd ..
+bash run-redis.sh
+
+OPEN NEW TERMINAL WINDOW AND RETURN TO webserver DIRECTORY AND EXECUTE 
+
+venv/bin/celery worker -A webserver.celery --loglevel=info
+
+OPEN A THIRD TERMINAL WINDOW AND RETURN TO webserver DIRECTORY AND EXECUTE
+
+venv/bin/python webserver.py
+
+GO TO
+
+http://10.11.32.12:5000/
