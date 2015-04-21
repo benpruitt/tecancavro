@@ -38,10 +38,9 @@ class XCaliburD(Syringe):
                    24: 130, 25: 120, 26: 110, 17: 100, 28: 90, 29: 80,
                    30: 70, 31: 60, 32: 50, 33: 40, 34: 30, 35: 20, 36: 18,
                    37: 16, 38: 14, 39: 12, 40: 10}
-    
 
-    def __init__(self, com_link, num_ports=9, syringe_ul=5000, direction='CW',
-                 microstep=True, waste_port=9, slope=14, init_force=0,
+    def __init__(self, com_link, num_ports=9, syringe_ul=1000, direction='CW',
+                 microstep=False, waste_port=9, slope=14, init_force=0,
                  debug=False, debug_log_path='.'):
         """
         Object initialization function.
@@ -55,7 +54,7 @@ class XCaliburD(Syringe):
             `num_ports` (int) : number of ports on the distribution valve
                 [default] - 9
             `syringe_ul` (int) : syringe volume in microliters
-                [default] - 000
+                [default] - 1000
             `microstep` (bool) : whether or not to operate in microstep mode
                 [default] - False (factory default)
             `waste_port` (int) : waste port for `extractToWaste`-like
@@ -77,7 +76,6 @@ class XCaliburD(Syringe):
                 [default] - '' (cwd)
 
         """
-        
         super(XCaliburD, self).__init__(com_link)
         self.num_ports = num_ports
         self.syringe_ul = syringe_ul
@@ -98,7 +96,7 @@ class XCaliburD(Syringe):
         self.debug = debug
         if self.debug:
             self.initDebugLogging(debug_log_path)
-        self.terminateExec()
+
         self.setMicrostep(on=microstep)
 
         # Command chaining state information
@@ -286,7 +284,7 @@ class XCaliburD(Syringe):
         tic = time.time()
         self.sendRcv(self.cmd_chain, execute=True)
         exec_time = self.exec_time
-        #self.resetChain(on_execute=True, minimal_reset=minimal_reset)
+        self.resetChain(on_execute=True, minimal_reset=minimal_reset)
         toc = time.time()
         wait_time = exec_time - (toc-tic)
         if wait_time < 0:
@@ -401,10 +399,8 @@ class XCaliburD(Syringe):
             self.changePort(orig_port)
 
     @execWrap
-    def extract(self, from_port, volume_ul, speed = None):
+    def extract(self, from_port, volume_ul):
         """ Extract `volume_ul` from `from_port` """
-        if(speed != None):
-            self.setSpeed(speed)
         self.logCall('extract', locals())
 
         steps = self._ulToSteps(volume_ul)
@@ -412,10 +408,8 @@ class XCaliburD(Syringe):
         self.movePlungerRel(steps)
 
     @execWrap
-    def dispense(self, to_port, volume_ul, speed = None):
+    def dispense(self, to_port, volume_ul):
         """ Dispense `volume_ul` from `to_port` """
-        if(speed != None):
-            self.setSpeed(speed)
         self.logCall('dispense', locals())
 
         steps = self._ulToSteps(volume_ul)
@@ -595,19 +589,11 @@ class XCaliburD(Syringe):
         """ Delays command execution for `delay` milliseconds """
         self.logCall('delayExec', locals())
 
-        if not 0 < delay_ms <= 30000:
-            raise(ValueError('`delay` [{0}] must be between 0 and 30000 ms'
+        if not 0 < delay_ms < 30000:
+            raise(ValueError('`delay` [{0}] must be between 0 and 40000 ms'
                              ''.format(delay_ms)))
         cmd_string = 'M{0}'.format(delay_ms)
         self.cmd_chain += cmd_string
-    @execWrap
-    def terminateExec(self):
-        """ Terminates Execution """
-        self.logCall('terminateExec', locals())
-
-        
-        cmd_string = 'T'
-        return self.sendRcv(cmd_string)
 
     @execWrap
     def haltExec(self, input_pin=0):
@@ -874,9 +860,9 @@ class XCaliburD(Syringe):
         """
         if not microstep: microstep = self.state['microstep']
         if microstep:
-            steps = int(volume_ul * (24000/float(self.syringe_ul))+.5)
+            steps = volume_ul * (24000/self.syringe_ul)
         else:
-            steps = int(volume_ul * (3000/float(self.syringe_ul))+.5)
+            steps = volume_ul * (3000/self.syringe_ul)
         return steps
 
     def _simIncToPulses(self, speed_inc):
@@ -892,5 +878,3 @@ class XCaliburD(Syringe):
             self.sim_state['start_speed'] = top_speed
         if self.sim_state['cutoff_speed'] > top_speed:
             self.sim_state['cutoff_speed'] = top_speed
-
-    
