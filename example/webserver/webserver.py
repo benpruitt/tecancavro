@@ -34,7 +34,7 @@ class User(object):
     def check_password(self, password):
         return check_password_hash(self.pw_hash, password)     
 
-
+#
 # Create and configure out application.
 SPEED_CODES_STROKE = {0: 1.25, 1: 1.3, 2: 1.39, 3: 1.52, 4: 1.71, 5: 1.97,
                           6: 2.37, 7: 2.77, 8: 3.03, 9: 3.36, 10: 3.77, 11: 4.3,
