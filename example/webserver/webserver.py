@@ -420,6 +420,7 @@ def advProtocol():
     for i in range(0,numitems):
         createTask(int(fromports[i]), int(toports[i]), float(flowrates[i]), float(volumes[i]), int(hours[i]), int(minutes[i]),int(seconds[i]), cycles[i], repeats[i], sp)
     time_to_exec = device_dict[sp].executeChain()
+    print("Exec time")
     print(time_to_exec)
     return ('', 204)
     
@@ -465,17 +466,74 @@ def createTask(from_port_id, to_port_id, flowrate_ul_s, volume_ul, hour_num, min
                             volume_remaining = 0
                 else:
                     #NEED TO CHANGE TO MAKE ACTUAL
+
+                    BASEDIVIDE = 10
+                                   
                     print("NOT exact")
                     volume_remaining = volume_ul
+                    if(actual_time_s > target_time_s):
+                        if(speed_to_use == 0):
+                            print("Cant go faster")
+                        else:
+                            speed_to_use = speed_to_use - 1
+
+                    actual_rate_ul_s = PUMP_VOLUME_UL / float(SPEED_CODES_STROKE[speed_to_use])
+                    actual_time_s = volume_ul / actual_rate_ul_s
+
+                    time_to_make_up = target_time_s - actual_time_s
+                    assert(time_to_make_up > 0)
+                    print(time_to_make_up)
+
+                    numloop = float(volume_ul) / float(PUMP_VOLUME_UL)
+
+                    break_time_per_loop = float(time_to_make_up) / numloop
                     
                     while volume_remaining > 0:
                         if volume_remaining >= PUMP_VOLUME_UL:
                             device_dict[sp].extract(int(from_port_id), int(PUMP_VOLUME_UL), speed = EXTRACT_SPEED)
-                            device_dict[sp].dispense(int(to_port_id), int(PUMP_VOLUME_UL), speed = speed_to_use)
+                            brk = int(5 * break_time_per_loop)
+                            print("brk")
+                            print(brk)
+                            if(brk > 0):
+                                device_dict[sp].markRepeatStart()
+                                device_dict[sp].dispense(int(to_port_id), int(25), speed = speed_to_use)
+                                MAX_DELAY = 30000
+                                num_brk_cycles = int(brk/MAX_DELAY)
+                                extra_delay = int(brk) % MAX_DELAY
+                                if(num_brk_cycles > 0):
+                                    device_dict[sp].markRepeatStart()
+                                    device_dict[sp].delayExec(MAX_DELAY)
+                                    device_dict[sp].repeatCmdSeq(num_pause_cycles)
+                                device_dict[sp].delayExec(extra_delay)
+                                device_dict[sp].repeatCmdSeq(int(PUMP_VOLUME_UL/25))
+                            else:
+                                device_dict[sp].dispense(int(to_port_id), int(PUMP_VOLUME_UL), speed = speed_to_use)
                             volume_remaining = volume_remaining - PUMP_VOLUME_UL
                         else:
                             device_dict[sp].extract(int(from_port_id), int(volume_remaining), speed = EXTRACT_SPEED)
-                            device_dict[sp].dispense(int(to_port_id), int(volume_remaining), speed = speed_to_use)
+                            num_tens = int(volume_remaining / 10)
+                            rem = int(volume_remaining) % 10
+
+
+                            brk = int(1000 * break_time_per_loop * (volume_remaining / PUMP_VOLUME_UL) / num_tens)
+                            print("brk")
+                            print(brk)
+                            if(brk > 0):
+                                device_dict[sp].markRepeatStart()
+                                device_dict[sp].dispense(int(to_port_id), int(10), speed = speed_to_use)
+                                MAX_DELAY = 30000
+                                num_brk_cycles = int(brk / MAX_DELAY)
+                                extra_delay = int(brk) % MAX_DELAY
+                                if(num_brk_cycles > 0):
+                                    device_dict[sp].markRepeatStart()
+                                    device_dict[sp].delayExec(MAX_DELAY)
+                                    device_dict[sp].repeatCmdSeq(num_pause_cycles)
+                                device_dict[sp].delayExec(extra_delay)
+                                device_dict[sp].repeatCmdSeq(num_tens)
+                                device_dict[sp].dispense(int(to_port_id), int(rem), speed = speed_to_use)
+                            else:
+                                device_dict[sp].dispense(int(to_port_id), int(volume_remaining), speed = speed_to_use)
+
                             volume_remaining = 0
 
                         

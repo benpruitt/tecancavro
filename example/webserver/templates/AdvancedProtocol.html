@@ -99,8 +99,8 @@
                                         <div class = "col-lg-16">
                                           <div class="form-group">
                                               
-                                              
-          
+                                              <input  id = "rate1" class="form-control" value="0" placeholder="ul/sec">
+         <!-- 
           <div class="sandbox">
 
             <select id="rate1" class="demo-default" placeholder="ul/sec">
@@ -144,7 +144,7 @@
                 <option value="3597.122302">3597.122302</option>
                 <option value="3846.153846">3846.153846</option>
             </select>
-          </div>
+          </div> -->
                                           </div>
                                         </div>
                                         </td>
@@ -174,6 +174,9 @@
                                         </div>
                                         </td>
                                     </tr>
+                                    <script>
+                                       toload = 1
+                                      </script>     
                                     {% else %}
                                     {% for j in params.protocols %}
                                        <tr>
@@ -181,7 +184,7 @@
                                            <label>{{j["num"]}}</label>
                                         </td>
                                         <td>
-                                           <div class = "col-lg-12">
+                                           <div class = "col-lg-16">
                                             <select id = '{{"from" + j["num"]}}' class="form-control">
                                                 {% for i in params.valves %}
                                             {% if i == j["fromport"] %}
@@ -194,7 +197,7 @@
                                           </div>
                                         </td>
                                         <td>
-                                          <div class = "col-lg-12">
+                                          <div class = "col-lg-16">
                                             <select id = '{{"to" + j["num"]}}' class="form-control">
                                                 {% for i in params.valves %}
                                                   {% if i == j["toport"] %}
@@ -211,7 +214,6 @@
                                           <div class="form-group">
                                               
                                               <input  id = '{{"hours" + j["num"]}}' class="form-control" placeholder="ul/sec" value='{{j["hours"]}}'>
-
                                           </div>
                                         </div>
                                         </td>
@@ -233,216 +235,10 @@
                                         </div>
                                         </td>
                                         <td>
-                                        
-                                       <div class = "col-lg-16">
+                                        <div class = "col-lg-16">
                                           <div class="form-group">
                                               
-                                              
-          
-          <div class="sandbox">
-
-            <select id = '{{"rate" + j["num"]}}' class="demo-default" placeholder="ul/sec" >
-                <option value="0"
-                {% if 0 == j["rate"] %}
-                selected
-                {% endif %}
-                >0</option>
-                <option value="8.333333333"
-                {% if 8.333333333 == j["rate"] %}
-                selected
-                {% endif %}
-                >8.333333333</option>
-                <option value="10"
-                {% if 10 == j["rate"] %}
-                selected
-                {% endif %}
-                >10</option>
-                <option value="11.66670556"
-                {% if 11.66670556 == j["rate"] %}
-                selected
-                {% endif %}
-                >11.66670556</option>
-                <option value="13.33333333"
-                {% if 13.33333333 == j["rate"] %}
-                selected
-                {% endif %}
-                >13.33333333</option>
-                <option value="15.00015"
-                {% if 15.00015 == j["rate"] %}
-                selected
-                {% endif %}
-                >15.00015</option>
-                <option value="16.66666667"
-                {% if 16.66666667 == j["rate"] %}
-                selected
-                {% endif %}
-                >16.66666667</option>
-                <option value="25"
-                {% if 25 == j["rate"] %}
-                selected
-                {% endif %}
-                >25</option>
-                <option value="33.33333333"
-                {% if 33.33333333 == j["rate"] %}
-                selected
-                {% endif %}
-                >33.33333333</option>
-                <option value="41.66666667"
-                {% if 41.66666667 == j["rate"] %}
-                selected
-                {% endif %}
-                >41.66666667</option>
-                <option value="50"
-                {% if 50 == j["rate"] %}
-                selected
-                {% endif %}
-                >50</option>
-                <option value="66.66666667"
-                {% if 66.66666667 == j["rate"] %}
-                selected
-                {% endif %}
-                >66.66666667</option>
-                <option value="74.99625019"
-                {% if 74.99625019 == j["rate"] %}
-                selected
-                {% endif %}
-                >74.99625019</option>
-                <option value="83.33333333"
-                {% if 83.33333333 == j["rate"] %}
-                selected
-                {% endif %}
-                >83.33333333</option>
-                <option value="91.65902841"
-                {% if 91.65902841 == j["rate"] %}
-                selected
-                {% endif %}
-                >91.65902841</option>
-                <option value="100"
-                {% if 100 == j["rate"] %}
-                selected
-                {% endif %}
-                >100</option>
-                <option value="108.3423619"
-                {% if 108.3423619 == j["rate"] %}
-                selected
-                {% endif %}
-                >108.3423619</option>
-                <option value="116.6588894"
-                {% if 116.6588894 == j["rate"] %}
-                selected
-                {% endif %}
-                >116.6588894</option>
-                <option value="125"
-                {% if 125 == j["rate"] %}
-                selected
-                {% endif %}
-                >125</option>
-                <option value="133.3333333"
-                {% if 133.3333333 == j["rate"] %}
-                selected
-                {% endif %}
-                >133.3333333</option>
-                <option value="141.6831964"
-                {% if 141.6831964 == j["rate"] %}
-                selected
-                {% endif %}
-                >141.6831964</option>
-                <option value="150.0150015"
-                {% if 150.0150015 == j["rate"] %}
-                selected
-                {% endif %}
-                >150.0150015</option>
-                <option value="158.3280557"
-                {% if 158.3280557 == j["rate"] %}
-                selected
-                {% endif %}
-                >158.3280557</option>
-                <option value="166.6666667"
-                {% if 166.6666667 == j["rate"] %}
-                selected
-                {% endif %}
-                >166.6666667</option>
-                <option value="333.3333333"
-                {% if 333.3333333 == j["rate"] %}
-                selected
-                {% endif %}
-                >333.3333333</option>
-                <option value="666.6666667"
-                {% if 666.6666667 == j["rate"] %}
-                selected
-                {% endif %}
-                >666.6666667</option>
-                <option value="833.3333333"
-                {% if 833.3333333 == j["rate"] %}
-                selected
-                {% endif %}
-                >833.3333333</option>
-                <option value="1000"
-                {% if 1000 == j["rate"] %}
-                selected
-                {% endif %}
-                >1000</option>
-                <option value="1162.790698"
-                {% if 1162.790698 == j["rate"] %}
-                selected
-                {% endif %}
-                >1162.790698</option>
-                <option value="1326.259947"
-                {% if 1326.259947 == j["rate"] %}
-                selected
-                {% endif %}
-                >1326.259947</option>
-                <option value="1488.095238"
-                {% if 1488.095238 == j["rate"] %}
-                selected
-                {% endif %}
-                >1488.095238</option>
-                <option value="1650.165017"
-                {% if 1650.165017 == j["rate"] %}
-                selected
-                {% endif %}
-                >1650.165017</option>
-                <option value="1805.054152"
-                {% if 1805.054152 == j["rate"] %}
-                selected
-                {% endif %}
-                >1805.054152</option>
-                <option value="2109.704641"
-                {% if 2109.704641 == j["rate"] %}
-                selected
-                {% endif %}
-                >2109.704641</option>
-                <option value="2538.071066"
-                {% if 2538.071066 == j["rate"] %}
-                selected
-                {% endif %}
-                >2538.071066</option>
-                <option value="2923.976608"
-                {% if 2923.976608 == j["rate"] %}
-                selected
-                {% endif %}
-                >2923.976608</option>
-                <option value="3289.473684"
-                {% if 3289.473684 == j["rate"] %}
-                selected
-                {% endif %}
-                >3289.473684</option>
-                <option value="3597.122302"
-                {% if 3597.122302 == j["rate"] %}
-                selected
-                {% endif %}
-                >3597.122302</option>
-                <option value="3846.153846"
-                {% if 3846.153846 == j["rate"] %}
-                selected
-                {% endif %}
-                >3846.153846</option>
-            </select>
-          </div>
-          <script>
-            var str = '{{"#rate" + j["num"]}}'
-            $(str).selectize();
-        </script>
+                                              <input  id = '{{"rate" + j["num"]}}' class="form-control" placeholder="ul/sec" value='{{j["rate"]}}'>
                                           </div>
                                         </div>
                                         </td>
@@ -456,7 +252,7 @@
                                         </td>
                                         <td>
                                           <div class = "col-lg-16">
-                                            <select id = "cycles1" class="form-control">
+                                            <select id = '{{"cycles" + j["num"]}}' class="form-control">
                                             <option value="na" {% if "na" == j["cycles"] %} selected {% endif %}>---</option>
                                             <option value="Start" {% if "Start" == j["cycles"] %} selected {% endif %}>Start</option>
                                             <option value="End" {% if "End" == j["cycles"] %} selected {% endif %}>End</option>
@@ -471,7 +267,10 @@
                                           </div>
                                         </div>
                                         </td>
-                                    </tr>     
+                                    </tr>
+                                    <script>
+                                       toload = {{j["num"]}}
+                                      </script>     
                                      
 
                                     {% endfor %}
