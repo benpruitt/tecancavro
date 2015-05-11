@@ -433,7 +433,8 @@ def createTask(from_port_id, to_port_id, flowrate_ul_s, volume_ul, hour_num, min
                 device_dict[sp].markRepeatStart()
             time_len = sec_num + 60*min_num + 3600*hour_num
             if(flowrate_ul_s * time_len != volume_ul):
-                printf("ERROR, incorrect conversions")
+                print("ERROR, incorrect conversions")
+                print(flowrate_ul_s * time_len)
             speed_to_use = 0
             if(flowrate_ul_s == 0 and volume_ul == 0):
                 delaytime = time_len*1000
