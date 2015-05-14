@@ -50,6 +50,7 @@ celery.conf.update(app.config)
 
 def threaded_function(arg):
     global device_dict
+    sleep(20)
     GPIO.setmode(GPIO.BCM)
     GPIO.setup(14, GPIO.IN) 
     GPIO.wait_for_edge(14, GPIO.BOTH)  
@@ -57,6 +58,8 @@ def threaded_function(arg):
     device_dict[item[0]].resetChain(on_execute=True, minimal_reset=False)
     device_dict[item[0]].extract(1, 5000, speed = 14, execute = False)
     device_dict[item[0]].dispense(1, 5000, speed = 14, execute = True)
+    thread2 = Thread(target = threaded_function, args = (10, ))
+    thread2.start()
     
 
 
