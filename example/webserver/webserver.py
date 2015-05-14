@@ -494,17 +494,17 @@ def createTask(from_port_id, to_port_id, flowrate_ul_s, volume_ul, hour_num, min
                     print("CONVERSION ERROR")
                 actual_time_s = volume_ul / actual_rate_ul_s
                 if(actual_time_s == target_time_s):
-                    volume_remaining = volume_ul
+                    numberrepeats = int(volume_ul/PUMP_VOLUME_UL)
+                    extra = int(volume_ul) % PUMP_VOLUME_UL
+                    if(numberrepeats > 0):
+                        device_dict[sp].markRepeatStart()
+                        device_dict[sp].extract(int(from_port_id), int(PUMP_VOLUME_UL), speed = EXTRACT_SPEED)
+                        device_dict[sp].dispense(int(to_port_id), int(PUMP_VOLUME_UL), speed = speed_to_use)
+                        device_dict[sp].repeatCmdSeq(numberrepeats)
+                    if(extra > 0):
+                        device_dict[sp].extract(int(from_port_id), int(extra), speed = EXTRACT_SPEED)
+                        device_dict[sp].dispense(int(to_port_id), int(extra), speed = speed_to_use)
                     
-                    while volume_remaining > 0:
-                        if volume_remaining >= PUMP_VOLUME_UL:
-                            device_dict[sp].extract(int(from_port_id), int(PUMP_VOLUME_UL), speed = EXTRACT_SPEED)
-                            device_dict[sp].dispense(int(to_port_id), int(PUMP_VOLUME_UL), speed = speed_to_use)
-                            volume_remaining = volume_remaining - PUMP_VOLUME_UL
-                        else:
-                            device_dict[sp].extract(int(from_port_id), int(volume_remaining), speed = EXTRACT_SPEED)
-                            device_dict[sp].dispense(int(to_port_id), int(volume_remaining), speed = speed_to_use)
-                            volume_remaining = 0
                 else:
                     #NEED TO CHANGE TO MAKE ACTUAL
 
@@ -545,7 +545,8 @@ def createTask(from_port_id, to_port_id, flowrate_ul_s, volume_ul, hour_num, min
                                     device_dict[sp].markRepeatStart()
                                     device_dict[sp].delayExec(MAX_DELAY)
                                     device_dict[sp].repeatCmdSeq(num_pause_cycles)
-                                device_dict[sp].delayExec(extra_delay)
+                                if(extra_delay > 0):
+                                    device_dict[sp].delayExec(extra_delay)
                                 device_dict[sp].repeatCmdSeq(int(PUMP_VOLUME_UL/25))
                             else:
                                 device_dict[sp].dispense(int(to_port_id), int(PUMP_VOLUME_UL), speed = speed_to_use)
@@ -569,7 +570,8 @@ def createTask(from_port_id, to_port_id, flowrate_ul_s, volume_ul, hour_num, min
                                     device_dict[sp].markRepeatStart()
                                     device_dict[sp].delayExec(MAX_DELAY)
                                     device_dict[sp].repeatCmdSeq(num_pause_cycles)
-                                device_dict[sp].delayExec(extra_delay)
+                                if(extra_delay > 0):
+                                    device_dict[sp].delayExec(extra_delay)
                                 device_dict[sp].repeatCmdSeq(num_tens)
                                 device_dict[sp].dispense(int(to_port_id), int(rem), speed = speed_to_use)
                             else:
