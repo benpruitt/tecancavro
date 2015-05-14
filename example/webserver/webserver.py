@@ -51,9 +51,8 @@ celery.conf.update(app.config)
 def threaded_function(arg):
     GPIO.setup(23, GPIO.IN, pull_up_down=GPIO.PUD_UP) 
     print("here") 
-    try:  
-        GPIO.wait_for_edge(23, GPIO.FALLING)  
-        print ("Change Detected")
+    GPIO.wait_for_edge(23, GPIO.FALLING)  
+    print ("Change Detected")
     
 
 
