@@ -49,6 +49,7 @@ celery.conf.update(app.config)
 
 
 def threaded_function(arg):
+    GPIO.setmode(GPIO.BCM)
     GPIO.setup(23, GPIO.IN, pull_up_down=GPIO.PUD_UP) 
     while True:
         if GPIO.input(23):
@@ -95,7 +96,7 @@ Bootstrap(app)
 app.jinja_env.trim_blocks = True
 app.jinja_env.lstrip_blocks = True
 
-GPIO.setmode(GPIO.BCM)
+
 
 
 #Import tecan library
