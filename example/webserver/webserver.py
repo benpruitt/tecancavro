@@ -51,20 +51,11 @@ celery.conf.update(app.config)
 def threaded_function(arg):
     GPIO.setmode(GPIO.BCM)
     GPIO.setup(23, GPIO.IN, pull_up_down=GPIO.PUD_UP) 
-    # while True:
-    #     if GPIO.input(23):
-    #          # the button is being pressed, so turn on the green LED
-    #          # and turn off the red LED
-             
-    #          print ("button true")
-    #     else:
-    #          # the button isn't being pressed, so turn off the green LED
-    #          # and turn on the red LED
-           
-    #          print ("button false")
-
-    #     time.sleep(.5)
-    # print("here") 
+    print(GPIO.input(23))
+    while True:
+        print(GPIO.input(23))
+        time.sleep(1)
+    print("here") 
     GPIO.wait_for_edge(23, GPIO.BOTH)  
     print ("Change Detected")
     
