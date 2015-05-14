@@ -56,8 +56,9 @@ def threaded_function(arg):
     #     print(GPIO.input(14))
     #     time.sleep(1)
     # print("here") 
-    GPIO.wait_for_edge(14, GPIO.BOTH)  
-    print ("Change Detected")
+    while(True):
+        GPIO.wait_for_edge(14, GPIO.BOTH)  
+        print ("Change Detected")
     
 
 
