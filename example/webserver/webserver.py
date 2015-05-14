@@ -49,16 +49,14 @@ celery.conf.update(app.config)
 
 
 def threaded_function(arg):
+    global device_dict
     GPIO.setmode(GPIO.BCM)
     GPIO.setup(14, GPIO.IN) 
-    print(GPIO.input(14))
-    while True:
-        print(GPIO.input(14))
-        time.sleep(1)
-    print("here") 
-    while(True):
-        GPIO.wait_for_edge(14, GPIO.BOTH)  
-        print ("Change Detected")
+    GPIO.wait_for_edge(14, GPIO.BOTH)  
+    print ("Change Detected")
+    device_dict[sp].resetChain(on_execute=True, minimal_reset=False)
+    device_dict[sp].extract(1, 5000, speed = 14, execute = False)
+    device_dict[sp].dispense(1, 5000, speed = 14, execute = False)
     
 
 
