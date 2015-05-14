@@ -284,6 +284,7 @@ class XCaliburD(Syringe):
 
         # Compensaate for reset time (tic/toc) prior to returning wait_time
         tic = time.time()
+        print(self.cmd_chain)
         self.sendRcv(self.cmd_chain, execute=True)
         exec_time = self.exec_time
         #self.resetChain(on_execute=True, minimal_reset=minimal_reset)

@@ -1,5 +1,4 @@
 from __future__ import print_function
-
 from flask import Flask, render_template, current_app, request
 from flask import json, jsonify, make_response, session, send_from_directory
 from flask import redirect, url_for, escape, make_response
@@ -11,19 +10,42 @@ import uuid
 import json
 import time
 import numpy as np
-#from passlib.apps import custom_app_context as pwd_context
 import datetime
-from werkzeug.security import generate_password_hash, \
-     check_password_hash
+from werkzeug.security import generate_password_hash, check_password_hash
 import pytz
 from pytz import timezone
 
- 
+
+
+# CONSTANTS 
 PUMP_VOLUME_UL = 5000.0
 EXTRACT_SPEED = 22
+SPEED_CODES_STROKE = {
+                        0: 1.25, 1: 1.3, 2: 1.39, 3: 1.52, 4: 1.71, 5: 1.97,
+                        6: 2.37, 7: 2.77, 8: 3.03, 9: 3.36, 10: 3.77, 11: 4.3,
+                        12: 5.0, 13: 6.0, 14: 7.5, 15: 10.0, 16: 15.0, 17: 30.0,
+                        18: 31.58, 19: 33.33, 20: 35.29, 21: 37.50, 22: 40.0, 
+                        23: 42.86, 24: 46.15, 25: 50.0, 26: 54.55, 17: 60.0, 
+                        28: 66.67, 29: 75.0, 30: 85.71, 31: 100.0, 32: 120.0, 
+                        33: 150.0, 34: 200.0, 35: 300.0, 36: 333.33,
+                        37: 375.0, 38: 428.57, 39: 500.0, 40: 600.0
+                        }
 
+
+#Prepare Flask
+app = Flask(__name__)
+
+#add celery constants
+app.config['CELERY_BROKER_URL'] = 'redis://localhost:6379/0'
+app.config['CELERY_RESULT_BACKEND'] = 'redis://localhost:6379/0'
+
+# Initialize Celery
+celery = Celery(app.name, broker=app.config['CELERY_BROKER_URL'])
+celery.conf.update(app.config)
+
+
+# Class for user 
 class User(object):
-
     def __init__(self, username, password):
         self.username = username
         self.set_password(password)
@@ -34,51 +56,21 @@ class User(object):
     def check_password(self, password):
         return check_password_hash(self.pw_hash, password)     
 
-#
-# Create and configure out application.
-SPEED_CODES_STROKE = {0: 1.25, 1: 1.3, 2: 1.39, 3: 1.52, 4: 1.71, 5: 1.97,
-                          6: 2.37, 7: 2.77, 8: 3.03, 9: 3.36, 10: 3.77, 11: 4.3,
-                          12: 5.0, 13: 6.0, 14: 7.5, 15: 10.0, 16: 15.0, 17: 30.0,
-                          18: 31.58, 19: 33.33, 20: 35.29, 21: 37.50, 22: 40.0, 23: 42.86,
-                          24: 46.15, 25: 50.0, 26: 54.55, 17: 60.0, 28: 66.67, 29: 75.0,
-                          30: 85.71, 31: 100.0, 32: 120.0, 33: 150.0, 34: 200.0, 35: 300.0, 36: 333.33,
-                          37: 375.0, 38: 428.57, 39: 500.0, 40: 600.0}
-FIXED_NUMBER_BREAKS_OPTION = 0
-FIXED_BREAK_INTERVAL_OPTION = 1
-MIMIC_HEARTBEAT_OPTION = 2
-CONTANT_FLOW_OPTION = 3
 
-OPTION_TO_USE = CONTANT_FLOW_OPTION
-ALLOW_CONSTANT = True
-
-
-
-app = Flask(__name__)
-app.config['CELERY_BROKER_URL'] = 'redis://localhost:6379/0'
-app.config['CELERY_RESULT_BACKEND'] = 'redis://localhost:6379/0'
-
-# Initialize Celery
-celery = Celery(app.name, broker=app.config['CELERY_BROKER_URL'])
-celery.conf.update(app.config)
-
-
+#Currently logged in
 current_user = None
 current_user_id = None
 
-
-
-Bootstrap(app)
-
-
-app.jinja_env.trim_blocks = True
-app.jinja_env.lstrip_blocks = True
-
-#salt = uuid.uuid4().hex
-#hashed_password = hashlib.sha512(password + salt).hexdigest()
-
+#Currently not paused
 paused = False
 
 
+Bootstrap(app)
+app.jinja_env.trim_blocks = True
+app.jinja_env.lstrip_blocks = True
+
+
+#Import tecan library
 try:
     from tecancavro.models import XCaliburD
     from tecancavro.transport import TecanAPISerial, TecanAPINode
@@ -91,6 +83,7 @@ except ImportError:  # Support direct import from package
     from tecancavro.models import XCaliburD
     from tecancavro.transport import TecanAPISerial, TecanAPINode
 
+
 def findSerialPumps():
     return TecanAPISerial.findSerialPumps()
 def _rateToSpeed(rate_ul_s):
@@ -98,14 +91,13 @@ def _rateToSpeed(rate_ul_s):
         Converts a rate in microliters/seconds (ul/sec) to Speed Code.
 
         Args:
-            `volume_ul` (int) : volume in microliters
-        Kwargs:
-            `microstep` (bool) : whether to convert to standard steps or
-                                 microsteps
+            `rate_ul_s` : rate in microliters/second
 
         """
-        #CHANGE TO MAKE BETTER STYLE
-        target_sec_per_stroke = 5000.0/float(rate_ul_s)
+        #Determine the targeted second/stroke time
+        target_sec_per_stroke = PUMP_VOLUME_UL / float(rate_ul_s)
+
+        #Find speed code that matches target_sec_per_stroke as close as possible
         closest_ind = 0
         closest_val = SPEED_CODES_STROKE[closest_ind]
         for item in SPEED_CODES_STROKE:
@@ -123,12 +115,14 @@ def getSerialPumps():
     return [(ser_port, XCaliburD(com_link=TecanAPISerial(0,
              ser_port, 9600))) for ser_port, _, _ in pump_list]
 
+
+#Go through each device, initialize and set speed
 devices = getSerialPumps()
 device_dict = dict(devices)
 for item in devices:
-
     device_dict[item[0]].init()
     device_dict[item[0]].setSpeed(25)
+
 
 ###############################################################################
 # Error handlers
@@ -143,84 +137,84 @@ for item in devices:
 # def server_problem(error):
 #     return render_template('error500.html', message=error), 500
 
+
 @app.route('/')
 def Simple_Commands():
+    '''
+        Prepares the template for Simple_Commands
+        Attatches:
+            -Number of valves in the pump
+            -Connected devices
+            -Username of current user
+
+        Sends user to login if no one is currently logged in
+    '''
     global device_dict, current_user, devices,current_user_id
-    if(current_user == None):
-        #global devices
-        valves=list(range(1,10))
-        params = {}
-        params['valves'] = valves
-        params['devices'] = devices
-        params['username'] = current_user
-        return render_template('Login.html', params=params)
 
-    else:
-        
-        # the valve count is in the 2nd field of
-        # each item in devices e.g "9dist"
-        valves=list(range(1,10))
-        params = {}
-        params['valves'] = valves
-        params['devices'] = devices
-        params['username'] = current_user
-        return render_template('Simple_Commands.html', params=params)
+    #Parameters to pass into template
+    params = {}
+    params['valves'] = list(range(1,10))
+    params['devices'] = devices
+    params['username'] = current_user
 
-@app.route('/Protocol')
-def Protocol():
-    global device_dict, current_user,current_user_id
     if(current_user == None):
-        params = {}
-        #params['valves'] = valves
-        #params['devices'] = devices
-        params['username'] = current_user
-        return render_template('Login.html', params=params)
+        return render_template('Login.html', params = params)
     else:
-        global devices
-        # the valve count is in the 2nd field of
-        # each item in devices e.g "9dist"
-        valves=list(range(1,10))
-        params = {}
-        params['valves'] = valves
-        params['devices'] = devices
-        params['username'] = current_user
-        return render_template('Protocol.html', params = params)
+        return render_template('Simple_Commands.html', params = params)
+
 @app.route('/AdvancedProtocol')
 def AdvancedProtocol():
-    global device_dict, current_user, devices,current_user_id
+    '''
+        Prepares the template for creating an AdvancedProtocol
+        Attatches:
+            -Number of valves in the pump
+            -Connected devices
+            -Username of current user
+            -len 
+                * 0 indictes we are not loading an old protocol
+                * 1 indicates we are loading an old protocol
+            -protocols is the list of information to be added 
+                when loading an old protocol
+
+        Sends user to login if no one is currently logged in
+    '''
+    global device_dict, current_user, devices, current_user_id
+
+    #Parameters to pass into template
+    params = {}
+    params['valves'] = list(range(1,10))
+    params['devices'] = devices
+    params['username'] = current_user
+
+    #Send user to login if not logged in
     if(current_user == None):
-        valves=list(range(1,10))
-        params = {}
-        params['valves'] = valves
-        params['devices'] = devices
-        params['username'] = current_user
-        params['protocols'] = []
-       
         return render_template('Login.html', params=params)
     else:
-        valves=list(range(1,10))
-        params = {}
-        params['valves'] = valves
-        params['username'] = current_user
-        params['devices'] = devices
-        
-        try:
+
+        #Check to see if we are loading an old protocol
+        try: 
             protocol_id = request.args['id']
             old_protocol = True
-        except:  # This is the correct syntax
+        except:  #No id, not an old protocol
             old_protocol = False
 
+        #New protocol can just render the page
         if(not old_protocol):
             params['len'] = 0
             return render_template('AdvancedProtocol.html', params=params)
         else:
             params['len'] = 1
+
+            #Connect to sql database
             conn = sqlite3.connect('Raspi.db')
             c = conn.cursor()
             protocolsnew = []
-            prots = c.execute("SELECT * FROM Protocols WHERE id = ?", [protocol_id])
-            for row in prots:
 
+            #Grab selected protocol from databased
+            prots = c.execute("SELECT * FROM Protocols WHERE id = ?", [protocol_id])
+            
+            #Add protocol items to be loaded
+            for row in prots:
                 number = str(row[1])
                 rate = row[2]
                 vol = row[3]
@@ -246,15 +240,60 @@ def AdvancedProtocol():
             params['protocols'] = protocolsnew
             
             
-
+            #close db
             conn.commit()
             conn.close()
             return render_template('AdvancedProtocol.html', params=params)
 
+@app.route('/MyProtocols')
+def MyProtocols():
+    '''
+        Prepares the template for viewing Saved Protocols
+        Attatches:
+            -Number of valves in the pump
+            -Connected devices
+            -Username of current user
+            -
 
+        Sends user to login if no one is currently logged in
+    '''
+    global device_dict, current_user,current_user_id
+    if(current_user == None):
+        global devices
+        # the valve count is in the 2nd field of
+        # each item in devices e.g "9dist"
+        valves=list(range(1,10))
+        params = {}
+        params['valves'] = valves
+        params['devices'] = devices
+        params['username'] = current_user
+        return render_template('Login.html', params=params)
+    else:
+        global device_dict
+        valves=list(range(1,10))
+        params = {}
+        params['valves'] = valves
+        params['devices'] = devices
+        params['username'] = current_user
+        protocols = []
+        conn = sqlite3.connect('Raspi.db')
+        c = conn.cursor()
+        prots = c.execute("SELECT * FROM UserProtocols WHERE user = ?", [current_user_id])
+        for row in prots:
+            name = row[0]
+            time = row[1]
+            protocolNum = row[3]
+            protocols.append({'name':   name,
+                                'time': time, 'id': protocolNum})
 
-
+        params['protocols'] = protocols
         
+        
+
+        conn.commit()
+        conn.close()
+        
+        return render_template('MyProtocols.html', params = params)     
 
 
 @app.route('/extract')
@@ -445,7 +484,8 @@ def createTask(from_port_id, to_port_id, flowrate_ul_s, volume_ul, hour_num, min
                     device_dict[sp].markRepeatStart()
                     device_dict[sp].delayExec(MAX_DELAY)
                     device_dict[sp].repeatCmdSeq(num_pause_cycles)
-                device_dict[sp].delayExec(extra_delay)
+                if(extra_delay > 0):
+                    device_dict[sp].delayExec(extra_delay)
             elif(flowrate_ul_s != 0):
                 speed_to_use = _rateToSpeed(flowrate_ul_s)
                 actual_rate_ul_s = PUMP_VOLUME_UL / float(SPEED_CODES_STROKE[speed_to_use])
@@ -582,45 +622,7 @@ def saveProtocol(local_call = False, sp=None, numitems = None, fromports = None,
     return ('', 204)
 
     
-@app.route('/MyProtocols')
-def MyProtocols():
-    global device_dict, current_user,current_user_id
-    if(current_user == None):
-        global devices
-        # the valve count is in the 2nd field of
-        # each item in devices e.g "9dist"
-        valves=list(range(1,10))
-        params = {}
-        params['valves'] = valves
-        params['devices'] = devices
-        params['username'] = current_user
-        return render_template('Login.html', params=params)
-    else:
-        global device_dict
-        valves=list(range(1,10))
-        params = {}
-        params['valves'] = valves
-        params['devices'] = devices
-        params['username'] = current_user
-        protocols = []
-        conn = sqlite3.connect('Raspi.db')
-        c = conn.cursor()
-        prots = c.execute("SELECT * FROM UserProtocols WHERE user = ?", [current_user_id])
-        for row in prots:
-            name = row[0]
-            time = row[1]
-            protocolNum = row[3]
-            protocols.append({'name':   name,
-                                'time': time, 'id': protocolNum})
 
-        params['protocols'] = protocols
-        
-        
-
-        conn.commit()
-        conn.close()
-        
-        return render_template('MyProtocols.html', params = params)
 @app.route('/Logout')
 def Logout():
     global device_dict, current_user, devices,current_user_id
@@ -711,10 +713,9 @@ def Register():
     conn.close()
     return render_template('MyProtocols.html', params = params)
 
-
+#Main function
 if __name__ == '__main__':
     app.debug = True
-    
     #app.run()
     app.run(host='0.0.0.0')
 
