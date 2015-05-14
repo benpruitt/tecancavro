@@ -14,8 +14,12 @@ import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 import pytz
 from pytz import timezone
+from threading import Thread
+from time import sleep
+import RPi.GPIO as GPIO  
 
 
+x = 1;
 
 # CONSTANTS 
 PUMP_VOLUME_UL = 5000.0
@@ -44,6 +48,16 @@ celery = Celery(app.name, broker=app.config['CELERY_BROKER_URL'])
 celery.conf.update(app.config)
 
 
+def threaded_function(arg):
+    GPIO.setup(23, GPIO.IN, pull_up_down=GPIO.PUD_UP) 
+    print("here") 
+    try:  
+        GPIO.wait_for_edge(23, GPIO.FALLING)  
+        print ("Change Detected")
+    except KeyboardInterrupt:  
+        GPIO.cleanup()       # clean up GPIO on CTRL+C exit  
+
+
 # Class for user 
 class User(object):
     def __init__(self, username, password):
@@ -68,6 +82,8 @@ paused = False
 Bootstrap(app)
 app.jinja_env.trim_blocks = True
 app.jinja_env.lstrip_blocks = True
+
+GPIO.setmode(GPIO.BCM)
 
 
 #Import tecan library
@@ -715,9 +731,16 @@ def Register():
     conn.close()
     return render_template('MyProtocols.html', params = params)
 
-#Main function
 if __name__ == '__main__':
-    app.debug = True
+    app.debug = False
     #app.run()
+    thread = Thread(target = threaded_function, args = (10, ))
+    thread.start()
+    #thread.join()
+    print("hi")
     app.run(host='0.0.0.0')
+    GPIO.cleanup()         
+    print("bye")
+
+
 
