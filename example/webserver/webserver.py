@@ -54,8 +54,8 @@ def threaded_function(arg):
     try:  
         GPIO.wait_for_edge(23, GPIO.FALLING)  
         print ("Change Detected")
-    except KeyboardInterrupt:  
-        GPIO.cleanup()       # clean up GPIO on CTRL+C exit  
+    
+
 
 
 # Class for user 
