@@ -52,10 +52,10 @@ def threaded_function(arg):
     GPIO.setmode(GPIO.BCM)
     GPIO.setup(14, GPIO.IN) 
     print(GPIO.input(14))
-    # while True:
-    #     print(GPIO.input(14))
-    #     time.sleep(1)
-    # print("here") 
+    while True:
+        print(GPIO.input(14))
+        time.sleep(1)
+    print("here") 
     while(True):
         GPIO.wait_for_edge(14, GPIO.BOTH)  
         print ("Change Detected")
