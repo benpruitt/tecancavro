@@ -54,9 +54,9 @@ def threaded_function(arg):
     GPIO.setup(14, GPIO.IN) 
     GPIO.wait_for_edge(14, GPIO.BOTH)  
     print ("Change Detected")
-    device_dict[sp].resetChain(on_execute=True, minimal_reset=False)
-    device_dict[sp].extract(1, 5000, speed = 14, execute = False)
-    device_dict[sp].dispense(1, 5000, speed = 14, execute = False)
+    device_dict[item[0]].resetChain(on_execute=True, minimal_reset=False)
+    device_dict[item[0]].extract(1, 5000, speed = 14, execute = False)
+    device_dict[item[0]].dispense(1, 5000, speed = 14, execute = False)
     
 
 
