@@ -65,7 +65,7 @@ def threaded_function(arg):
 
     #     time.sleep(.5)
     # print("here") 
-    GPIO.wait_for_edge(23, GPIO.FALLING)  
+    GPIO.wait_for_edge(23, GPIO.BOTH)  
     print ("Change Detected")
     
 
