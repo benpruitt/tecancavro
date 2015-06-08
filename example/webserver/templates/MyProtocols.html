@@ -1,5 +1,58 @@
 {% extends "layout.html" %}
 {% block content %}
+<script>
+
+function deleteRow(r) {
+    var i = r.parentNode.parentNode.rowIndex;
+    var text = document.getElementById("protocolTable").rows[i].cells[2].innerText;
+    document.getElementById("protocolTable").deleteRow(i);
+
+
+     $.get('deleteprotocol',
+              {'protocolid': text
+              }
+            );
+}
+
+function editThing(r) {
+    var i = r.parentNode.parentNode.rowIndex;
+    var text = document.getElementById("protocolTable").rows[i].cells[2].innerText;
+    
+
+}
+
+function test(r){
+  var table = document.getElementById("protocolTable");
+  var x = -2
+  var protocols = []
+  for (var i = 0, row; row = table.rows[i]; i++) {
+    x = x + 1
+   
+} 
+  var micros = []
+  for(var i = 1; i <= x; i++){
+    var str =  "micro" + i
+    var selected = document.getElementById(str).selectedIndex
+    micros[i] = selected
+    id = table.rows[i].cells[2].innerText;
+    protocols[i] = id
+  }
+  $.get('Micro',
+              {'micros': JSON.stringify(micros),
+              'len': x,
+              'protocols': JSON.stringify(protocols)
+               
+                }
+            );
+}
+function send(r){
+  $.get('MicroS',
+              {
+                }
+            );
+
+}
+</script>
 
         <div id="page-wrapper">
 
@@ -27,30 +80,76 @@
                                         <th>Name</th>
                                         <th>Time Created</th>
                                         <th>Protocol ID</th>
+                                        <th>View</th>
+                                        <th>Micro. Numb.</th>
+                                        <th>Delete</th>
                                     </tr>
+
                                 </thead>
                                 <tbody>
+                                
+                                  {% set count = 1 %}
                                   {% for i in params.protocols %}
                                   <form action="AdvancedProtocol" method="get">
                                   <tr>
                                     <td>
+
                                {{i["name"]}}
+<button id = '{{"edit" + count|string}}' type="button" class="btn btn-warning btn-circle" onclick="editThing(this)"><i class="fa fa-pencil"></i>
+
                             </td>
                             <td>
                               {{i["time"]}}
                             </td>
                             <td>
-                              {{i["id"]}}
+                              <p id = '{{"protocolid" + count|string}}'> {{i["id"]}} </p> 
                             </td>
                             <td>
                               <input type="hidden" name="id" value ='{{i["id"]}}'/>
                             <input type="submit" value="Choose">
                           </td>
+                          <td>
+
+<div class = "col-lg-8">
+<select id = '{{"micro" + count|string}}' class="form-control">
+        <option value="0" selected>NA</option> 
+                        {% for x in range(params.total) %}
+
+                   <option value="{{x+1}}"
+                   {% if i["ord"] == x + 1 %}
+                   selected
+                   {% endif %}
+                   >{{x+1}}</option> 
+          
+                    {% endfor %}
+                          </select> 
+</div>     
+                          </td>
+                          <td>
+                             <button id = '{{"delete" + count|string}}' type="button" onclick="deleteRow(this)" class="btn btn-warning btn-circle"><i class="fa fa-times"></i>
+
+                            </button>
+                            {% set count = count + 1 %}
+                          </td>
                             </tr>
                           
                           </form>
                               {% endfor %}
-                                
+                              <tr>
+                              <td></td>
+<td></td>
+<td></td>
+<td></td>
+<td>
+<button id = 'update' type="button" value = "Update" onclick="test(this)"> Update </button>
+
+</td>
+<td>
+<button id = 'microgo' type="button" value = "Micro Start" onclick="send(this)"> Micro Start </button>
+
+</td>
+</tr>
+
                                   
                                 </tbody>
                             </table>

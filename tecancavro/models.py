@@ -810,6 +810,7 @@ class XCaliburD(Syringe):
         self.logDebug('sendRcv: sending cmd_string: {}'.format(cmd_string))
         with self._syringeErrorHandler():
             parsed_response = super(XCaliburD, self)._sendRcv(cmd_string)
+            
             self.logDebug('sendRcv: received response: {}'.format(
                           parsed_response))
             data = parsed_response[0]

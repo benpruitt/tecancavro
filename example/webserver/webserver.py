@@ -16,7 +16,10 @@ import pytz
 from pytz import timezone
 from threading import Thread
 from time import sleep
-import RPi.GPIO as GPIO  
+
+
+
+#import RPi.GPIO as GPIO  
 
 
 x = 1;
@@ -50,16 +53,119 @@ celery.conf.update(app.config)
 
 def threaded_function(arg):
     global device_dict
-    sleep(20)
+    
+    conn = sqlite3.connect('Raspi.db')
+    c = conn.cursor()
+    scopes = c.execute("SELECT * FROM scope WHERE userid = ?", [current_user_id])
+    scopeids = []
+    for row in scopes:
+        order = row[0]
+        protocolid = row[1]
+        scopeids.append({'ord': order,
+                        'prot' : protocolid})
+
+    conn.commit()
+    conn.close()
+
+
+
+
+
+    
+
+
+
+
+    print ("Change Detected")
+    
+
+
+    thread2 = Thread(target = executemicro, args = (scopeids,1))
+    thread2.start()
+
+def executemicro(arg1, arg2):
+    global device_dict, last_used, devices
+    sleep(5)
+    
+    sp = None
+    for item in devices:
+        sp = item[0]
+
+    ind = -1
+    x = 0
+    print(arg1)
+    for item in arg1:
+        print(item)
+        if int(item["ord"]) == arg2:
+            ind = item["prot"]
+            break
+        x = x + 1
+    print(ind)
+
+    conn = sqlite3.connect('Raspi.db')
+    c = conn.cursor()
+    protocolsnew = []
+    #Grab selected protocol from databased
+    prots = c.execute("SELECT * FROM Protocols WHERE id = ?", [ind])
+
+
+    fromports = []
+    toports = []
+    flowrates = []
+    volumes = []
+    hours = []
+    minutes = []
+    seconds = []
+    cycles = []
+    repeats = []
+    numitems = 0
+    #Add protocol items to be loaded
+    for row in prots:
+        number = str(row[1])
+        rate = row[2]
+        vol = row[3]
+        fromport = row[4]
+        toport = row[5]
+        hour = row[6]
+        minute = row[7]
+        second = row[8]
+        cycle = row[9]
+        numrepeats = row[10]
+        fromports.append(fromport)
+        toports.append(toport)
+        flowrates.append(rate)
+        volumes.append(vol)
+        hours.append(hour)
+        minutes.append(minute)
+        seconds.append(second)
+        cycles.append(cycle)
+        repeats.append(numrepeats)
+        numitems = numitems + 1
+
+    conn.commit()
+    conn.close()
+      
+    reset(sp)
+    device_dict[sp].resetChain(on_execute=True, minimal_reset=False)
+    for i in range(0,numitems):
+        createTask(int(fromports[i]), int(toports[i]), float(flowrates[i]), float(volumes[i]), int(hours[i]), int(minutes[i]),int(seconds[i]), cycles[i], repeats[i], sp)
+    
     GPIO.setmode(GPIO.BCM)
     GPIO.setup(14, GPIO.IN) 
     GPIO.wait_for_edge(14, GPIO.BOTH)  
-    print ("Change Detected")
-    device_dict[item[0]].resetChain(on_execute=True, minimal_reset=False)
-    device_dict[item[0]].extract(1, 5000, speed = 14, execute = False)
-    device_dict[item[0]].dispense(1, 5000, speed = 14, execute = True)
-    thread2 = Thread(target = threaded_function, args = (10, ))
-    thread2.start()
+    time_to_exec = device_dict[sp].executeChain()       
+            
+    #close db
+    
+
+
+
+    if(ind > -1):
+        thread2 = Thread(target = executemicro, args = (arg1,arg2 + 1))
+        thread2.start()
+
+
+
     
 
 
@@ -267,6 +373,20 @@ def AdvancedProtocol():
             conn.close()
             return render_template('AdvancedProtocol.html', params=params)
 
+@app.route('/deleteprotocol')
+def deleteprotocol():
+    global device_dict, current_user,current_user_id
+    todelete = int(request.args['protocolid'])
+    
+    conn = sqlite3.connect('Raspi.db')
+    c = conn.cursor()
+    query = "delete from UserProtocols where id = " + str(todelete) + " and user = " + str(current_user_id)
+    print(query)
+    c.execute(query)
+    conn.commit()
+    conn.close()
+
+
 @app.route('/MyProtocols')
 def MyProtocols():
     '''
@@ -301,15 +421,37 @@ def MyProtocols():
         conn = sqlite3.connect('Raspi.db')
         c = conn.cursor()
         prots = c.execute("SELECT * FROM UserProtocols WHERE user = ?", [current_user_id])
+        counter = 0
         for row in prots:
             name = row[0]
             time = row[1]
             protocolNum = row[3]
             protocols.append({'name':   name,
-                                'time': time, 'id': protocolNum})
-
-        params['protocols'] = protocols
+                                'time': time, 
+                                'id': protocolNum,
+                                })
+            counter = counter + 1
         
+            
+        
+        
+
+
+        scopes = c.execute("SELECT * FROM scope WHERE userid = ?", [current_user_id])
+        scopeids = []
+        x = 0
+        for row in scopes:
+            order = row[0]
+            scopeids.append({'ord': order})
+        if(len(scopeids) != 0):
+            params['scopes'] = scopeids
+        else:
+            params['scopes'] = [0] * counter
+
+        for f, b in zip(params['scopes'], protocols):
+            b.update({'ord': f["ord"]})
+        params['protocols'] = protocols
+        params['total'] = counter
         
 
         conn.commit()
@@ -368,9 +510,10 @@ def dispense_call():
         device_dict[sp].dispense(port, volume, speed = newSpeed, execute = executing)
     return ('', 204)
 @app.route('/reset')
-def reset():
+def reset(sp = None, help = None):
     global device_dict, current_user,current_user_id
-    sp = request.args['serial_port']
+    if(sp == None):
+        sp = request.args['serial_port']
     if len(sp) > 0:
         device_dict[sp].terminateExec()
         device_dict[sp].resetChain()
@@ -659,6 +802,34 @@ def Logout():
     params['username'] = current_user
     return render_template('Login.html', params = params)
 
+
+@app.route('/Micro')
+def Micros():
+    global device_dict, current_user, devices,current_user_id
+    micros =  json.loads(request.args['micros'])
+    protocols =  json.loads(request.args['protocols'])
+    n = int(request.args['len']) + 1
+    conn = sqlite3.connect('Raspi.db')
+    c = conn.cursor()
+    query = "delete from scope where userid = '%s' " % int(current_user_id)
+    c.execute(query)
+    for i in range(1, n):
+        print(int(micros[i]))
+        print(int(protocols[i]))
+        items = [int(micros[i]), int(protocols[i]), int(current_user_id)]
+        
+        res = c.execute("INSERT INTO scope VALUES (?,?,?)", items)
+    print(res)
+    conn.commit()
+    conn.close()
+    return ('', 204)
+
+@app.route('/MicroS')
+def MicroS():
+    thread = Thread(target = threaded_function, args = (10, ))
+    thread.start()
+    return ('', 204)
+
 @app.route('/Login')
 def Login():
     global device_dict, current_user, devices,current_user_id
@@ -740,12 +911,17 @@ def Register():
 if __name__ == '__main__':
     app.debug = False
     #app.run()
-    thread = Thread(target = threaded_function, args = (10, ))
-    thread.start()
+ 
     #thread.join()
     print("hi")
     app.run(host='0.0.0.0')
-    GPIO.cleanup()         
+    
+
+
+    #GPIO.cleanup()         
+    
+
+
     print("bye")
 
 

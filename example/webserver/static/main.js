@@ -25,7 +25,13 @@ $(document).ready(function() {
     event.preventDefault();
 });
 
-//$('#rate1').selectize();
+// $.fn.editable.defaults.mode = 'inline';     
+// $('#test1').editable({
+//   type: 'text',
+//     pk: 1,
+//     url: '/get',
+//     send: 'always'
+//   });
 
 $( "#resetbutton" ).click(function( event ) {
   var serport = $( "#serial_port").val() || '';
@@ -541,6 +547,8 @@ function dynamicChanges(id_num){
 for (i = 1; i <= toload; i++){
   dynamicChanges(i)
 }
+
+
 
 
 });
