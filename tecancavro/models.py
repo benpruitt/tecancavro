@@ -103,7 +103,7 @@ class XCaliburD(Syringe):
         self.cmd_chain = ''
         self.exec_time = 0
         self.sim_speed_change = False
-        self.sim_state = {k: v for k,v in self.state.items()}
+        self.sim_state = {k: v for k, v in self.state.items()}
 
         # Init functions
         self.updateSpeeds()
@@ -314,7 +314,7 @@ class XCaliburD(Syringe):
         self.exec_time = 0
         if (on_execute and self.sim_speed_change):
             if minimal_reset:
-                self.state = {k: v for k,v in self.sim_state.items()}
+                self.state = {k: v for k, v in self.sim_state.items()}
             else:
                 self.state['slope'] = self.sim_state['slope']
                 self.state['microstep'] = self.sim_state['microstep']
@@ -332,7 +332,7 @@ class XCaliburD(Syringe):
         """
         self.logCall('updateSimState', locals())
 
-        self.sim_state = {k: v for k,v in self.state.items()}
+        self.sim_state = {k: v for k, v in self.state.items()}
 
     def cacheSimSpeeds(self):
         """
@@ -441,7 +441,7 @@ class XCaliburD(Syringe):
         if not 0 < to_port <= self.num_ports:
             raise(ValueError('`to_port` [{0}] must be between 1 and '
                              '`num_ports` [{1}]'.format(to_port,
-                             self.num_ports)))
+                                                        self.num_ports)))
         if not from_port:
             if self.sim_state['port']:
                 from_port = self.sim_state['port']
@@ -471,14 +471,14 @@ class XCaliburD(Syringe):
 
         if self.sim_state['microstep']:
             if not 0 <= abs_position <= 24000:
-                raise(ValueError('`abs_position` must be between 0 and 40000'
-                                 ' when operating in microstep mode'.format(
-                                 self.port_num)))
+                raise(ValueError('`abs_position` must be between 0 and 24000'
+                                 ' when operating in microstep mode'
+                                 ''.format(self.port_num)))
         else:
             if not 0 <= abs_position <= 3000:
-                raise(ValueError('`abs_position` must be between 0 and 40000'
-                                 ' when operating in microstep mode'.format(
-                                 self.port_num)))
+                raise(ValueError('`abs_position` must be between 0 and 3000'
+                                 ' when operating in standard mode'
+                                 ''.format(self.port_num)))
         cmd_string = 'A{0}'.format(abs_position)
         cur_pos = self.sim_state['plunger_pos']
         delta_pos = cur_pos-abs_position
@@ -822,12 +822,12 @@ class XCaliburD(Syringe):
             move_t = theo_top_speed - (start_speed/slope)
         else:
             theo_top_speed = sqrt(((2.0*move_steps*slope) +
-                             ((start_speed**2.0+cutoff_speed**2.0)/2.0)))
+                                  ((start_speed**2.0+cutoff_speed**2.0)/2.0)))
         # If theoretical top speed with exceed cutoff speed but not
         # reach the set top speed
         if cutoff_speed < theo_top_speed < top_speed:
             move_t = ((1 / slope) * (2.0 * theo_top_speed - start_speed -
-                     cutoff_speed))
+                                     cutoff_speed))
         # If start speed, top speed, and cutoff speed are all the same
         elif start_speed == top_speed == cutoff_speed:
             move_t = (2.0 * move_steps) / top_speed
@@ -842,7 +842,7 @@ class XCaliburD(Syringe):
                 ramp_up_t = (top_speed - start_speed) / slope
                 ramp_down_t = (top_speed - cutoff_speed) / slope
                 constant_halfsteps = (2.0 * move_steps - ramp_up_halfsteps -
-                                     ramp_down_halfsteps)
+                                      ramp_down_halfsteps)
                 constant_t = constant_halfsteps / top_speed
                 move_t = ramp_up_t + ramp_down_t + constant_t
         return move_t
@@ -858,7 +858,8 @@ class XCaliburD(Syringe):
                                  microsteps
 
         """
-        if not microstep: microstep = self.state['microstep']
+        if microstep is None:
+            microstep = self.state['microstep']
         if microstep:
             steps = volume_ul * (24000/self.syringe_ul)
         else:
