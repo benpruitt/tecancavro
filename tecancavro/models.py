@@ -40,7 +40,7 @@ class XCaliburD(Syringe):
                    37: 16, 38: 14, 39: 12, 40: 10}
 
     def __init__(self, com_link, num_ports=9, syringe_ul=1000, direction='CW',
-                 microstep=False, waste_port=9, slope=14, init_force=0,
+                 microstep=False, in_port=0, waste_port=9, slope=14, init_force=0,
                  debug=False, debug_log_path='.'):
         """
         Object initialization function.
@@ -57,6 +57,7 @@ class XCaliburD(Syringe):
                 [default] - 1000
             `microstep` (bool) : whether or not to operate in microstep mode
                 [default] - False (factory default)
+            `in_port` (int) : input port (default 0)
             `waste_port` (int) : waste port for `extractToWaste`-like
                                  convenience functions
                 [default] - 9 (factory default for init out port)
@@ -80,6 +81,7 @@ class XCaliburD(Syringe):
         self.num_ports = num_ports
         self.syringe_ul = syringe_ul
         self.direction = direction
+        self.in_port = in_port
         self.waste_port = waste_port
         self.init_force = init_force
         self.state = {
@@ -154,7 +156,7 @@ class XCaliburD(Syringe):
         init_force = init_force if init_force is not None else self.init_force
         direction = direction if direction is not None else self.direction
         out_port = out_port if out_port is not None else self.waste_port
-        in_port = in_port if in_port is not None else 0
+        in_port = in_port if in_port is not None else self.in_port
 
         cmd_string = '{0}{1},{2},{3}'.format(
                      self.__class__.DIR_DICT[direction][1],
