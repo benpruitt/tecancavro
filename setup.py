@@ -11,7 +11,7 @@ DESCRIPTION = 'Python library for Tecan Cavro OEM syringe pump control'
 
 DISTNAME = 'tecancavro'
 LICENSE = 'MIT'
-AUTHORS = 'Ben Pruitt'
+AUTHORS = 'Ben Pruitt, Nick Conway'
 EMAIL = 'benjamin.pruitt@wyss.harvard.edu'
 URL = 'https://github.com/benpruitt/tecancavro'
 DOWNLOAD_URL = ''
